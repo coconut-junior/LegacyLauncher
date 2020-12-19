@@ -66,7 +66,6 @@ import javax.swing.SwingWorker;
 import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
 
-import net.technicpack.minecraftcore.mojang.auth.io.User;
 import net.technicpack.minecraftcore.mojang.auth.response.AuthResponse;
 import org.spoutcraft.launcher.GameUpdater;
 import org.spoutcraft.launcher.LibrariesYML;
@@ -105,9 +104,9 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
   private final JButton                    offlineMode      = new JButton("Offline Mode");
   private final JButton                    tryAgain         = new JButton("Try Again");
   final JTextPane                          editorPane       = new JTextPane();
-  private final JButton                    loginSkin1;
+  private final JAccountButton             loginSkin1;
   private final List<JButton>              loginSkin1Image;
-  private final JButton                    loginSkin2;
+  private final JAccountButton             loginSkin2;
   private final List<JButton>              loginSkin2Image;
   private TumblerFeedParsingWorker         tumblerFeed;
   public final JProgressBar                progressBar;
@@ -199,7 +198,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     passwordField.setFont(new Font("Arial", Font.PLAIN, 11));
     passwordField.setBounds(143, 42, 119, 22);
 
-    loginSkin1 = new JButton("Login as Player");
+    loginSkin1 = new JAccountButton("Login as Player");
     loginSkin1.setFont(new Font("Arial", Font.PLAIN, 11));
     loginSkin1.setBounds(72, 428, 119, 23);
     loginSkin1.setOpaque(false);
@@ -207,7 +206,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     loginSkin1.setVisible(false);
     loginSkin1Image = new ArrayList<JButton>();
 
-    loginSkin2 = new JButton("Login as Player");
+    loginSkin2 = new JAccountButton("Login as Player");
     loginSkin2.setFont(new Font("Arial", Font.PLAIN, 11));
     loginSkin2.setBounds(261, 428, 119, 23);
     loginSkin2.setOpaque(false);
@@ -491,12 +490,14 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
                 // }
                 if (!Main.isOffline) {
                   loginSkin1.setText(skinName);
+                  loginSkin1.setAccountName(user);
                   loginSkin1.setVisible(true);
                   ImageUtils.drawCharacter(contentPane, this, skin, 103, 170, loginSkin1Image);
                 }
               } else if (i == 2) {
                 if (!Main.isOffline) {
                   loginSkin2.setText(skinName);
+                  loginSkin2.setAccountName(user);
                   loginSkin2.setVisible(true);
                   ImageUtils.drawCharacter(contentPane, this, skin, 293, 170, loginSkin2Image);
                 }
@@ -552,7 +553,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     Object source = event.getSource();
     if (source == loginSkin1 || source == loginSkin2) {
       eventId = "Login";
-      this.usernameField.setSelectedItem(((JButton) source).getText());
+      this.usernameField.setSelectedItem(((JAccountButton) source).getAccountEmail());
     } else if (loginSkin1Image.contains(source)) {
       eventId = "Login";
       this.usernameField.setSelectedItem(loginSkin1.getText());
