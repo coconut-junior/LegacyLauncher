@@ -14,4 +14,4 @@ The goal of this launcher is to provide a one-click method to switch modpacks an
 
 Main Technic site is here: https://technicpack.net/
 
-and the forums are here: https://forums.technicpack.net/Update R
+and the forums are here: https://forums.technicpack.net/
