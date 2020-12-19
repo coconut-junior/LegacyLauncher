@@ -16,11 +16,16 @@
  */
 package org.spoutcraft.launcher;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.UUID;
 
 import javax.swing.JProgressBar;
 
+import com.google.gson.Gson;
+import net.technicpack.minecraftcore.mojang.auth.request.AuthRequest;
+import net.technicpack.minecraftcore.mojang.auth.response.AuthResponse;
 import org.spoutcraft.launcher.exception.AccountMigratedException;
 import org.spoutcraft.launcher.exception.BadLoginException;
 import org.spoutcraft.launcher.exception.MCNetworkException;
@@ -39,27 +44,15 @@ public class MinecraftUtils {
     MinecraftUtils.options = options;
   }
 
-  public static String[] doLogin(String user, String pass, JProgressBar progress) throws BadLoginException, MCNetworkException, OutdatedMCLauncherException,
-      UnsupportedEncodingException, MinecraftUserNotPremiumException, AccountMigratedException {
-    String parameters = "user=" + URLEncoder.encode(user, "UTF-8") + "&password=" + URLEncoder.encode(pass, "UTF-8") + "&version=" + 13;
-    String result = PlatformUtils.excutePost("https://login.minecraft.net/", parameters, progress);
+  public static AuthResponse doLogin(String user, String pass, JProgressBar progress) throws BadLoginException, MCNetworkException, OutdatedMCLauncherException,
+          IOException, MinecraftUserNotPremiumException {
+    AuthRequest request = new AuthRequest(user, pass, UUID.randomUUID().toString());
+    String parameters = Util.GSON.toJson(request);
+    String response = PlatformUtils.excutePost("https://authserver.mojang.com/authenticate", parameters, progress);
+    AuthResponse result = Util.GSON.fromJson(response, AuthResponse.class);
     if (result == null) {
       throw new MCNetworkException();
     }
-    if (!result.contains(":")) {
-      if (result.trim().equals("Bad login")) {
-        throw new BadLoginException();
-      } else if (result.trim().equals("User not premium")) {
-        throw new MinecraftUserNotPremiumException();
-      } else if (result.trim().equals("Old version")) {
-        throw new OutdatedMCLauncherException();
-      } else if (result.trim().equals("Account migrated, use e-mail as username.")) {
-        throw new AccountMigratedException();
-      } else {
-        System.err.print("Unknown login result: " + result);
-      }
-      throw new MCNetworkException();
-    }
-    return result.split(":");
+    return result;
   }
 }

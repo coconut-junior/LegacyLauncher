@@ -16,15 +16,21 @@
  */
 package org.spoutcraft.launcher;
 
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import com.google.gson.Gson;
+import org.apache.commons.io.IOUtils;
+import org.spoutcraft.launcher.io.ProfileResponse;
+import org.spoutcraft.launcher.io.SessionProfileResponse;
+import org.spoutcraft.launcher.io.SkinInfo;
+
+import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.swing.JProgressBar;
@@ -33,6 +39,8 @@ public class PlatformUtils {
 
   public static final String LAUNCHER_DIR = "techniclauncher";
   private static File        workDir      = null;
+  private static final String PROFILE_API_URL = "https://api.mojang.com/users/profiles/minecraft/";
+  private static final String SESSION_API_URL = "https://sessionserver.mojang.com/session/minecraft/profile/";
 
   public static File getWorkingDirectory() {
     if (workDir == null) {
@@ -97,70 +105,73 @@ public class PlatformUtils {
   }
 
   public enum OS {
-
     linux, solaris, windows, macos, unknown
   }
 
-  public static String excutePost(String targetURL, String urlParameters, JProgressBar progress) {
-    HttpsURLConnection connection = null;
+  public static String excutePost(String url, String data, JProgressBar progress) throws IOException {
+    byte[] rawData = data.getBytes(StandardCharsets.UTF_8);
+    HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+    connection.setUseCaches(false);
+    connection.setDoOutput(true);
+    connection.setDoInput(true);
+    connection.setConnectTimeout(15000);
+    connection.setReadTimeout(15000);
+    connection.setRequestMethod("POST");
+    connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+    connection.setRequestProperty("Content-Length", Integer.toString(rawData.length));
+    connection.setRequestProperty("Content-Language", "en-US");
+
+    DataOutputStream writer = new DataOutputStream(connection.getOutputStream());
+    writer.write(rawData);
+    writer.flush();
+    writer.close();
+
+    InputStream stream = null;
+    String returnable = null;
     try {
-      URL url = new URL(targetURL);
-      connection = (HttpsURLConnection) url.openConnection();
-      connection.setRequestMethod("POST");
-      connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+      stream = connection.getInputStream();
+      returnable = IOUtils.toString(stream, StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      stream = connection.getErrorStream();
 
-      connection.setRequestProperty("Content-Length", Integer.toString(urlParameters.getBytes().length));
-      connection.setRequestProperty("Content-Language", "en-US");
-
-      connection.setUseCaches(false);
-      connection.setDoInput(true);
-      connection.setDoOutput(true);
-
-      connection.setConnectTimeout(10000);
-
-      connection.connect();
-      Certificate[] certs = connection.getServerCertificates();
-
-      byte[] bytes = new byte[294];
-      DataInputStream dis = new DataInputStream(PlatformUtils.class.getResourceAsStream("minecraft.key"));
-      dis.readFully(bytes);
-      dis.close();
-
-      Certificate c = certs[0];
-      PublicKey pk = c.getPublicKey();
-      byte[] data = pk.getEncoded();
-
-      for (int j = 0; j < data.length; j++) {
-        if (data[j] == bytes[j]) {
-          continue;
-        }
-        throw new RuntimeException("Public key mismatch");
+      if (stream == null) {
+        throw e;
       }
-
-      DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
-      wr.writeBytes(urlParameters);
-      wr.flush();
-      wr.close();
-
-      InputStream is = connection.getInputStream();
-      BufferedReader rd = new BufferedReader(new InputStreamReader(is));
-
-      StringBuilder response = new StringBuilder();
-      String line;
-      while ((line = rd.readLine()) != null) {
-        response.append(line);
-        response.append('\r');
-      }
-      rd.close();
-
-      return response.toString();
-    } catch (Exception e) {
-      String message = "Login failed...";
-      progress.setString(message);
     } finally {
-      if (connection != null) {
-        connection.disconnect();
-      }
+      try {
+        if (stream != null)
+          stream.close();
+      } catch (IOException ignored) {}
+    }
+
+    return returnable;
+  }
+
+  public static String getUserSkin(String username) {
+    try {
+      ProfileResponse userProfile = executeGetRequest(PROFILE_API_URL+username, ProfileResponse.class);
+      if (userProfile == null) return null;
+      SessionProfileResponse session = executeGetRequest(SESSION_API_URL+userProfile.getId(), SessionProfileResponse.class);
+      String encoded = session.getProperties().get(0).getValue();
+      Base64.Decoder decoder = Base64.getDecoder();
+      String decoded = new String(decoder.decode(encoded));
+      SkinInfo skin = new Gson().fromJson(decoded, SkinInfo.class);
+      return skin.getTextures().getSKIN().getUrl();
+    } catch (IOException e) {
+      e.printStackTrace();
+      return null;
+    }
+  }
+
+  public static <T> T executeGetRequest(String url, Class<T> classType) throws IOException {
+    URL obj = new URL(url);
+    HttpURLConnection httpURLConnection = (HttpURLConnection) obj.openConnection();
+    httpURLConnection.setRequestMethod("GET");
+    httpURLConnection.setRequestProperty("User-Agent", "Mozilla/5.0");
+    if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+      InputStreamReader in = new InputStreamReader(httpURLConnection.getInputStream());
+
+      return new Gson().fromJson(in, classType);
     }
     return null;
   }

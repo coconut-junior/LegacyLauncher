@@ -13,11 +13,14 @@ import java.util.logging.Logger;
 
 import javax.swing.JComboBox;
 
+import com.google.gson.Gson;
 import org.spoutcraft.launcher.modpacks.ModPackListYML;
 
 public class Util {
 
   private static final String RESOURCES_PATH = "resources";
+
+  public static final Gson GSON = new Gson();
 
   public static void closeQuietly(Closeable closeable) {
     try {
@@ -74,7 +77,7 @@ public class Util {
     ArrayList<String> list = new ArrayList<String>();
 
     try {
-      is = FileUtils.class.getResourceAsStream(s);
+      is = Main.class.getResourceAsStream(s);
       br = new BufferedReader(new InputStreamReader(is));
       while (null != (line = br.readLine())) {
         list.add(line);

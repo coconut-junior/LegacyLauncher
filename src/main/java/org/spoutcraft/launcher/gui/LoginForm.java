@@ -66,6 +66,8 @@ import javax.swing.SwingWorker;
 import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
 
+import net.technicpack.minecraftcore.mojang.auth.io.User;
+import net.technicpack.minecraftcore.mojang.auth.response.AuthResponse;
 import org.spoutcraft.launcher.GameUpdater;
 import org.spoutcraft.launcher.LibrariesYML;
 import org.spoutcraft.launcher.MD5Utils;
@@ -115,7 +117,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
   public boolean                           modpackUpdate    = false;
   public static UpdateDialog               updateDialog;
   private static String                    pass             = null;
-  public static String[]                   values           = null;
+  public static AuthResponse               values           = null;
   private int                              success          = LauncherFrame.ERROR_IN_LAUNCH;
   public String                            workingDir       = PlatformUtils.getWorkingDirectory().getAbsolutePath();
   public static final ModPackUpdater       gameUpdater      = new ModPackUpdater();
@@ -482,20 +484,21 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
               if (dis.readBoolean())
                 skinName = dis.readUTF();
 
+              String skin = PlatformUtils.getUserSkin(skinName);
               if (i == 1) {
                 // if (tumblerFeed != null) {
                 TumblerFeedParsingWorker.setUser(skinName);
                 // }
                 if (!Main.isOffline) {
-                  loginSkin1.setText(user);
+                  loginSkin1.setText(skinName);
                   loginSkin1.setVisible(true);
-                  ImageUtils.drawCharacter(contentPane, this, "http://s3.amazonaws.com/MinecraftSkins/" + skinName + ".png", 103, 170, loginSkin1Image);
+                  ImageUtils.drawCharacter(contentPane, this, skin, 103, 170, loginSkin1Image);
                 }
               } else if (i == 2) {
                 if (!Main.isOffline) {
-                  loginSkin2.setText(user);
+                  loginSkin2.setText(skinName);
                   loginSkin2.setVisible(true);
-                  ImageUtils.drawCharacter(contentPane, this, "http://s3.amazonaws.com/MinecraftSkins/" + skinName + ".png", 293, 170, loginSkin2Image);
+                  ImageUtils.drawCharacter(contentPane, this, skin, 293, 170, loginSkin2Image);
                 }
               }
             }
@@ -642,6 +645,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
         progressBar.setString("Connecting to www.minecraft.net...");
         String password = pass.toString();
         try {
+          System.out.println("Attempting login...");
           values = MinecraftUtils.doLogin(user, pass, progressBar);
           return true;
         } catch (AccountMigratedException e) {
@@ -692,7 +696,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
           } else {
             int result = JOptionPane.showConfirmDialog(getParent(), "Would you like to run in offline mode?", "Unable to Connect to Minecraft.net", JOptionPane.YES_NO_OPTION);
             if (result == JOptionPane.YES_OPTION) {
-              values = new String[] { "0", "0", user, "0" };
+              values = new AuthResponse();
               return true;
             }
           }
@@ -715,11 +719,11 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
 
       @Override
       protected void done() {
-        if (values == null || values.length < 4) {
+        if (values == null || values.getError() != null) {
           return;
         }
         LoginForm.pass = pass;
-        String profileName = values[2].toString();
+        String profileName = values.getSelectedProfile().getName();
 
         MessageDigest digest = null;
 
@@ -729,7 +733,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
         }
 
         gameUpdater.user = usernameField.getSelectedItem().toString(); // values[2].trim();
-        gameUpdater.downloadTicket = values[1].trim();
+        gameUpdater.downloadTicket = "1";
         if (!cmdLine) {
           String password = new String(passwordField.getPassword());
           if (rememberCheckbox.isSelected()) {
@@ -881,7 +885,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
 
     LauncherFrame launcher = new LauncherFrame();
     launcher.setLoginForm(this);
-    int result = (Main.isOffline) ? launcher.runGame(null, null, null, null) : launcher.runGame(values[2].trim(), values[3].trim(), values[1].trim(), pass);
+    int result = (Main.isOffline) ? launcher.runGame(null, null, null, null) : launcher.runGame(values.getSelectedProfile().getName(), values.getClientToken(), "0", pass);
     if (result == LauncherFrame.SUCCESSFUL_LAUNCH) {
       LoginForm.updateDialog.dispose();
       LoginForm.updateDialog = null;

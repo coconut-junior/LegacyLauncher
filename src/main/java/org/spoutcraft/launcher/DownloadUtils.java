@@ -89,22 +89,18 @@ public class DownloadUtils {
 
     ExecutorService es = Executors.newCachedThreadPool();
     for (final Map.Entry<String, String> file : downloadFileList.entrySet()) {
-      es.execute(new Runnable() {
-
-        @Override
-        public void run() {
-          Download downloadFile = null;
-          try {
-            downloadFile = downloadFile(file.getKey(), file.getValue());
-            if (downloadFile != null && downloadFile.isSuccess()) {
-              filesDownloaded++;
-              return;
-            }
-          } catch (IOException e) {
-            e.printStackTrace();
+      es.execute(() -> {
+        Download downloadFile = null;
+        try {
+          downloadFile = downloadFile(file.getKey(), file.getValue());
+          if (downloadFile != null && downloadFile.isSuccess()) {
+            filesDownloaded++;
+            return;
           }
-          Util.log("File '%s' failed to download.", downloadFile.getOutFile());
+        } catch (IOException e) {
+          e.printStackTrace();
         }
+        Util.log("File '%s' failed to download.", downloadFile.getOutFile());
       });
     }
     es.shutdown();

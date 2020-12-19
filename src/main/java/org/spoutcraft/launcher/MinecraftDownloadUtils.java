@@ -89,13 +89,10 @@ public class MinecraftDownloadUtils {
         if (currentMinecraftMD5.equals(resultMD5)) {
           GameUpdater.copy(patchedMinecraft, requiredFile);
           patchedMinecraft.delete();
-          patch.deleteOnExit();
-          patch.delete();
           return true;
         }
       }
-    } catch (IOException e) {
-    }
+    } catch (IOException ignored) {}
     return false;
   }
 }

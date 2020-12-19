@@ -59,6 +59,7 @@ public class MD5Utils {
     Configuration config = MinecraftYML.getMinecraftYML();
     Map<String, Map<String, String>> builds = (Map<String, Map<String, String>>) config.getProperty("versions");
     for (String version : builds.keySet()) {
+      Util.log("Checking version "+version);
       String minecraftMD5 = builds.get(version).get("minecraft");
       if (minecraftMD5.equalsIgnoreCase(md5Hash)) {
         return version;

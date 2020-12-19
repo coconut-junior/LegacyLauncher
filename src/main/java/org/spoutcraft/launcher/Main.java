@@ -110,10 +110,8 @@ public class Main {
 
   public static void main(String[] args) throws Exception {
     LoadingScreen ls = new LoadingScreen();
-    if (!isDebug()) {
-      ls.setVisible(true);
-      build = Util.getBuild();
-    }
+    ls.setVisible(true);
+    build = Util.getBuild();
     Options options = new Options();
     try {
       new JCommander(options, args);
@@ -133,22 +131,6 @@ public class Main {
       }
     } catch (Exception e) {
       e.printStackTrace();
-    }
-
-    if (relaunch) {
-      ls.close();
-      // if (SettingsUtil.getMemorySelection() < 6) {
-      int mem = SettingsUtil.getMemorySelection();
-      if (SettingsUtil.getMemorySelection() < 512) {
-        SettingsUtil.setMemorySelection(1024);
-        mem = 1024;
-      }
-      recursion.createNewFile();
-      if (isDebug())
-        System.exit(0);
-      else
-        reboot("-Xmx" + mem + "m");
-      // }
     }
 
     if (PlatformUtils.getPlatform() == PlatformUtils.OS.macos) {
@@ -204,7 +186,6 @@ public class Main {
     loginForm.setLocationByPlatform(true);
     loginForm.setVisible(true);
     ls.close();
-
   }
 
   private static String getBuild() {

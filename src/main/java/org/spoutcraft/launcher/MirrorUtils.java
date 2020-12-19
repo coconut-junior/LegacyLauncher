@@ -17,7 +17,7 @@ import org.spoutcraft.launcher.async.DownloadListener;
 
 public class MirrorUtils {
 
-  public static final String[] MIRRORS_URL = { "http://mirror.technicpack.net/Technic/mirrors.yml", "https://raw.github.com/TechnicPack/Technic/master/mirrors.yml" };
+  public static final String[] MIRRORS_URL = { "https://raw.githubusercontent.com/Su5eD/Technic/master/mirrors.yml" };
   public static File           mirrorsYML  = new File(GameUpdater.workDir, "mirrors.yml");
   private static boolean       updated     = false;
   private static final Random  rand        = new Random();
@@ -48,7 +48,7 @@ public class MirrorUtils {
           count += current.getValue();
           String url = current.getKey();
           if (count > random) {
-            String mirror = (!url.contains("github.com")) ? "http://" + url + "/" + mirrorURI : "https://" + url + "/" + mirrorURI;
+            String mirror = "https://" + url + "/" + mirrorURI;
             if (isAddressReachable(mirror)) {
               return mirror;
             } else {

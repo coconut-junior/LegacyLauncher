@@ -1,6 +1,7 @@
 package org.spoutcraft.launcher;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -62,7 +63,7 @@ public class MinecraftYML {
   }
 
   public static Set<String> getCachedMinecraftVersions() {
-    Set<String> minecraftVersions = new HashSet<String>();
+    Set<String> minecraftVersions = new HashSet<>();
     for (String filename : GameUpdater.cacheDir.list()) {
       if (!filename.startsWith("minecraft_"))
         continue;
@@ -77,7 +78,7 @@ public class MinecraftYML {
       if (compareVersions(latestVersion, nextVersion) < 0)
         latestVersion = nextVersion;
     }
-    return latestVersion == "0" ? null : latestVersion;
+    return latestVersion.equals("0") ? null : latestVersion;
   }
 
   public static int compareVersions(String version1, String version2) {
@@ -89,11 +90,14 @@ public class MinecraftYML {
     }
 
     if (i < vals1.length && i < vals2.length) {
+      Util.log("Comparing: ");
+      Util.log(Arrays.toString(vals1));
+      Util.log(Arrays.toString(vals2));
       int diff = new Integer(vals1[i]).compareTo(new Integer(vals2[i]));
-      return diff < 0 ? -1 : diff == 0 ? 0 : 1;
+      return Integer.compare(diff, 0);
     }
 
-    return vals1.length < vals2.length ? -1 : vals1.length == vals2.length ? 0 : 1;
+    return Integer.compare(vals1.length, vals2.length);
   }
 
   public static void updateMinecraftYMLCache() {

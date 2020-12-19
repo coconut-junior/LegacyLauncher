@@ -14,13 +14,11 @@ import javax.swing.JPanel;
 public class ImageUtils {
 
   public static void drawCharacter(JPanel contentPane, ActionListener listener, String url, int x, int y, List<JButton> buttons) {
-    BufferedImage originalImage;
+    BufferedImage originalImage = null;
     try {
       try {
         originalImage = ImageIO.read(new URL(url));
-      } catch (Exception e) {
-        originalImage = ImageIO.read(new URL("http://s3.amazonaws.com/MinecraftSkins/char.png"));
-      }
+      } catch (Exception ignored) {}
       int type = BufferedImage.TYPE_INT_ARGB;// originalImage.getType() ==
       // 0 ?
       // BufferedImage.TYPE_INT_ARGB
