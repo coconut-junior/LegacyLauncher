@@ -184,7 +184,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     modpackList.setSelectedItem(SettingsUtil.getModPackSelection());
     modpackList.addActionListener(this);
 
-    JLabel lblMinecraftUsername = new JLabel("Minecraft Username: ");
+    JLabel lblMinecraftUsername = new JLabel("Minecraft Email: ");
     lblMinecraftUsername.setFont(new Font("Arial", Font.PLAIN, 11));
     lblMinecraftUsername.setHorizontalAlignment(SwingConstants.RIGHT);
     lblMinecraftUsername.setBounds(-17, 17, 150, 14);
@@ -556,10 +556,10 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
       this.usernameField.setSelectedItem(((JAccountButton) source).getAccountEmail());
     } else if (loginSkin1Image.contains(source)) {
       eventId = "Login";
-      this.usernameField.setSelectedItem(loginSkin1.getText());
+      this.usernameField.setSelectedItem(loginSkin1.getAccountEmail());
     } else if (loginSkin2Image.contains(source)) {
       eventId = "Login";
-      this.usernameField.setSelectedItem(loginSkin2.getText());
+      this.usernameField.setSelectedItem(loginSkin2.getAccountEmail());
     }
     if ((source == modpackList)) {
       if (ModPackListYML.currentModPack == null) {
