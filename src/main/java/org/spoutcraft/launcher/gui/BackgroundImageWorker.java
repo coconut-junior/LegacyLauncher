@@ -9,7 +9,7 @@ import org.spoutcraft.launcher.async.Download;
 
 public class BackgroundImageWorker extends SwingWorker<Object, Object> {
 
-  private static final String SPLASH_URL = "http://mirror.technicpack.net/Technic/splash/01.png";
+  private static final String SPLASH_URL = "https://mirror.technicpack.net/Technic/splash/01.png";
   private File                backgroundImage;
   private BackgroundPanel     background;
 

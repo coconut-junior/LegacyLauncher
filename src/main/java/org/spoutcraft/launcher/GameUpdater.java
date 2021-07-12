@@ -67,9 +67,9 @@ public class GameUpdater implements DownloadListener {
   public static File         resourceDir        = new File(WORKING_DIRECTORY, "resources");
 
   /* Minecraft Updating Arguments */
-  public final String        baseURL            = "http://s3.amazonaws.com/MinecraftDownload/";
-  public final String        latestLWJGLURL     = "http://mirror.technicpack.net/Technic/Libraries/lwjgl/";
-  public final String        spoutcraftMirrors  = "http://cdn.getspout.org/mirrors.html";
+  public final String        baseURL            = "https://s3.amazonaws.com/MinecraftDownload/";
+  public final String        latestLWJGLURL     = "https://mirror.technicpack.net/Technic/Libraries/lwjgl/";
+  public final String        spoutcraftMirrors  = "https://cdn.getspout.org/mirrors.html";
 
   private DownloadListener   listener;
 

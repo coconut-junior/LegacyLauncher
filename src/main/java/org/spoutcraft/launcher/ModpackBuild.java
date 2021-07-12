@@ -34,7 +34,7 @@ public class ModpackBuild {
   }
 
   public String getMinecraftURL(String user) {
-    return "http://assets.minecraft.net/" + this.minecraftVersion.replace('.', '_') + "/minecraft.jar";
+    return "https://assets.minecraft.net/" + this.minecraftVersion.replace('.', '_') + "/minecraft.jar";
   }
 
   public void setDownloadListener(DownloadListener listener) {
