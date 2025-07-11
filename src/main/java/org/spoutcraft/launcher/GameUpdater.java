@@ -23,12 +23,18 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
@@ -37,12 +43,14 @@ import java.util.zip.ZipOutputStream;
 
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
+import net.lingala.zip4j.model.FileHeader;
 import net.lingala.zip4j.progress.ProgressMonitor;
 
 import org.spoutcraft.launcher.async.DownloadListener;
-import org.spoutcraft.launcher.exception.UnsupportedOSException;
 
-import SevenZip.LzmaAlone;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class GameUpdater implements DownloadListener {
   public static final String LAUNCHER_DIRECTORY = "launcher";
@@ -67,11 +75,57 @@ public class GameUpdater implements DownloadListener {
   public static File         resourceDir        = new File(WORKING_DIRECTORY, "resources");
 
   /* Minecraft Updating Arguments */
-  public final String        baseURL            = "https://s3.amazonaws.com/MinecraftDownload/";
-  public final String        latestLWJGLURL     = "https://mirror.technicpack.net/Technic/Libraries/lwjgl/";
   public final String        spoutcraftMirrors  = "https://cdn.getspout.org/mirrors.html";
+  
 
-  private DownloadListener   listener;
+  private DownloadListener listener;
+  
+  private JsonObject getVersionJson(String minecraftVersion) throws Exception {
+    // 1. Get the version manifest
+    JsonParser parser = new JsonParser();
+    URL manifestUrl = new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json");
+    HttpURLConnection manifestConn = (HttpURLConnection) manifestUrl.openConnection();
+    JsonObject manifest = parser.parse(new InputStreamReader(manifestConn.getInputStream(), StandardCharsets.UTF_8))
+        .getAsJsonObject();
+
+    // 2. Find the version's JSON URL
+    String versionJsonUrl = null;
+    for (JsonElement version : manifest.getAsJsonArray("versions")) {
+      JsonObject v = version.getAsJsonObject();
+      if (v.get("id").getAsString().equals(minecraftVersion)) {
+        versionJsonUrl = v.get("url").getAsString();
+        break;
+      }
+    }
+    if (versionJsonUrl == null) {
+      throw new RuntimeException("Version not found in manifest: " + minecraftVersion);
+    }
+
+    // 3. Fetch the version JSON
+    URL versionUrl = new URL(versionJsonUrl);
+    HttpURLConnection versionConn = (HttpURLConnection) versionUrl.openConnection();
+    return parser.parse(new InputStreamReader(versionConn.getInputStream(), StandardCharsets.UTF_8)).getAsJsonObject();
+  }
+
+  public String getClientJarUrl(String minecraftVersion) throws Exception {
+        JsonObject versionJson = getVersionJson(minecraftVersion);
+        return versionJson.getAsJsonObject("downloads").getAsJsonObject("client").get("url").getAsString();
+    }
+    
+  public String[] getLwjglUrls(String minecraftVersion) throws Exception {
+        JsonObject versionJson = getVersionJson(minecraftVersion);
+        List<String> lwjglUrls = new ArrayList<>();
+        for (JsonElement libElem : versionJson.getAsJsonArray("libraries")) {
+            JsonObject lib = libElem.getAsJsonObject();
+            if (lib.getAsJsonObject("downloads") != null && lib.get("name").getAsString().contains("lwjgl")) {
+                JsonObject artifact = lib.getAsJsonObject("downloads").getAsJsonObject("artifact");
+                if (artifact != null && artifact.has("url")) {
+                    lwjglUrls.add(artifact.get("url").getAsString());
+                }
+            }
+        }
+        return lwjglUrls.toArray(new String[0]);
+    }
 
   public GameUpdater() {
   }
@@ -105,84 +159,135 @@ public class GameUpdater implements DownloadListener {
 
     binDir.mkdir();
     cacheDir.mkdirs();
-    // if (tempDir.exists()) FileUtils.deleteDirectory(tempDir);
     tempDir.mkdirs();
 
     ModpackBuild build = ModpackBuild.getSpoutcraftBuild();
     String minecraftVersion = build.getMinecraftVersion();
 
-    String minecraftMD5 = MD5Utils.getMD5(FileType.minecraft, minecraftVersion);
-    String jinputMD5 = MD5Utils.getMD5(FileType.jinput);
-    String lwjglMD5 = MD5Utils.getMD5(FileType.lwjgl);
-    String lwjgl_utilMD5 = MD5Utils.getMD5(FileType.lwjgl_util);
-
-    // Processs minecraft.jar \\
+    // Download Minecraft client.jar dynamically
     File mcCache = new File(cacheDir, "minecraft_" + minecraftVersion + ".jar");
-    if (!mcCache.exists() || !minecraftMD5.equals(MD5Utils.getMD5(mcCache))) {
-      String minecraftURL = baseURL + "minecraft.jar?user=" + user + "&ticket=" + downloadTicket;
+    if (!mcCache.exists()) {
+      String clientJarUrl = getClientJarUrl(minecraftVersion);
       String output = tempDir + File.separator + "minecraft.jar";
-      MinecraftDownloadUtils.downloadMinecraft(minecraftURL, output, build, listener);
+      MinecraftDownloadUtils.downloadMinecraft(clientJarUrl, output, build, listener);
     }
     stateChanged("Copying minecraft.jar from cache", 0);
     copy(mcCache, new File(binDir, "minecraft.jar"));
     stateChanged("Copied minecraft.jar from cache", 100);
 
-    File nativesDir = new File(binDir.getPath(), "natives");
-    nativesDir.mkdir();
+    // Download LWJGL libraries dynamically
+    String[] lwjglUrls = getLwjglUrls(minecraftVersion);
+    for (String lwjglUrl : lwjglUrls) {
+        String fileName = lwjglUrl.substring(lwjglUrl.lastIndexOf('/') + 1);
+        File libCache = new File(cacheDir, fileName);
+        if (!libCache.exists()) {
+            DownloadUtils.downloadFile(lwjglUrl, libCache.getAbsolutePath(), fileName, null, listener);
+        } else {
+            stateChanged("Copying " + fileName + " from cache", 0);
+        }
 
-    // Process other Downloads
-    mcCache = new File(cacheDir, "jinput.jar");
-    String md5 = (SettingsUtil.isLatestLWJGL()) ? MD5Utils.getMD5FromList("Libraries\\lwjgl\\jinput.jar") : jinputMD5;
-    if (!mcCache.exists() || !jinputMD5.equals(MD5Utils.getMD5(mcCache))) {
-      DownloadUtils.downloadFile(getNativesUrl() + "jinput.jar", binDir.getPath() + File.separator + "jinput.jar", "jinput.jar", md5, listener);
-    } else {
-      stateChanged("Copying jinput.jar from cache", 0);
-      copy(mcCache, new File(binDir, "jinput.jar"));
-      stateChanged("Copied jinput.jar from cache", 100);
+        // Determine the expected output name
+        String expectedName = null;
+        if (fileName.contains("lwjgl_util")) {
+            expectedName = "lwjgl_util.jar";
+        } else if (fileName.contains("lwjgl") && !fileName.contains("util")) {
+            expectedName = "lwjgl.jar";
+        } else if (fileName.contains("jinput")) {
+            expectedName = "jinput.jar";
+        }
+
+        if (expectedName != null) {
+            File outFile = new File(binDir, expectedName);
+            copy(libCache, outFile);
+            stateChanged("Copied " + expectedName + " from cache", 100);
+        }
     }
 
-    mcCache = new File(cacheDir, "lwjgl.jar");
-    md5 = (SettingsUtil.isLatestLWJGL()) ? MD5Utils.getMD5FromList("Libraries\\lwjgl\\lwjgl.jar") : lwjglMD5;
-    if (!mcCache.exists() || !lwjglMD5.equals(MD5Utils.getMD5(mcCache))) {
-      DownloadUtils.downloadFile(getNativesUrl() + "lwjgl.jar", binDir.getPath() + File.separator + "lwjgl.jar", "lwjgl.jar", md5, listener);
-    } else {
-      stateChanged("Copying lwjgl.jar from cache", 0);
-      copy(mcCache, new File(binDir, "lwjgl.jar"));
-      stateChanged("Copied lwjgl.jar from cache", 100);
-    }
-
-    mcCache = new File(cacheDir, "lwjgl_util.jar");
-    md5 = (SettingsUtil.isLatestLWJGL()) ? MD5Utils.getMD5FromList("Libraries\\lwjgl\\lwjgl_util.jar") : lwjgl_utilMD5;
-    if (!mcCache.exists() || !lwjgl_utilMD5.equals(MD5Utils.getMD5(mcCache))) {
-      DownloadUtils.downloadFile(getNativesUrl() + "lwjgl_util.jar", binDir.getPath() + File.separator + "lwjgl_util.jar", "lwjgl_util.jar", md5, listener);
-    } else {
-      stateChanged("Copying lwjgl_util.jar from cache", 0);
-      copy(mcCache, new File(binDir, "lwjgl_util.jar"));
-      stateChanged("Copied lwjgl_util.jar from cache", 100);
-    }
-
-    getNatives();
-
-    File nativesZip = new File(GameUpdater.tempDir.getPath() + File.separator + "natives.zip");
-    File nativesDirectory = new File(GameUpdater.binDir, "natives");
-    extractCompressedFile(nativesDirectory, nativesZip, true);
+    File nativesDirectory = new File(binDir, "natives");
+    downloadAndExtractNatives(minecraftVersion, nativesDirectory);
 
     MinecraftYML.setInstalledVersion(minecraftVersion);
   }
+  
+  // Example method to get native library URLs for macOS
+  public List<String> getNativeLibraryUrls(String minecraftVersion) {
+    List<String> nativeUrls = new ArrayList<>();
+    try {
+      // 1. Get the version JSON (reuse your getMinecraftURL logic)
+      URL manifestUrl = new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json");
+      HttpURLConnection manifestConn = (HttpURLConnection) manifestUrl.openConnection();
+      JsonParser parser = new JsonParser();
+      JsonObject manifest = parser.parse(new InputStreamReader(manifestConn.getInputStream(), StandardCharsets.UTF_8))
+          .getAsJsonObject();
 
-  public String getNativesUrl() {
-    if (SettingsUtil.isLatestLWJGL()) {
-      return latestLWJGLURL;
+      String versionJsonUrl = null;
+      for (JsonElement version : manifest.getAsJsonArray("versions")) {
+        JsonObject v = version.getAsJsonObject();
+        if (v.get("id").getAsString().equals(minecraftVersion)) {
+          versionJsonUrl = v.get("url").getAsString();
+          break;
+        }
+      }
+      if (versionJsonUrl == null) {
+        throw new RuntimeException("Version not found in manifest: " + minecraftVersion);
+      }
+
+      URL versionUrl = new URL(versionJsonUrl);
+      HttpURLConnection versionConn = (HttpURLConnection) versionUrl.openConnection();
+      JsonObject versionJson = parser.parse(new InputStreamReader(versionConn.getInputStream(), StandardCharsets.UTF_8))
+          .getAsJsonObject();
+
+      // 2. Find native libraries for macOS
+      for (JsonElement libElem : versionJson.getAsJsonArray("libraries")) {
+        JsonObject lib = libElem.getAsJsonObject();
+        if (lib.has("natives") && lib.getAsJsonObject("natives").has("osx")) {
+          String classifier = lib.getAsJsonObject("natives").get("osx").getAsString();
+          JsonObject downloads = lib.getAsJsonObject("downloads");
+          if (downloads.has("classifiers") && downloads.getAsJsonObject("classifiers").has(classifier)) {
+            String url = downloads.getAsJsonObject("classifiers").getAsJsonObject(classifier).get("url").getAsString();
+            nativeUrls.add(url);
+          }
+        }
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to get native library URLs: " + e.getMessage(), e);
     }
-    return baseURL;
+    return nativeUrls;
   }
 
-  public String getNativesUrl(String fileName) {
-    if (SettingsUtil.isLatestLWJGL()) {
-      return latestLWJGLURL + fileName + ".zip";
+  public void downloadAndExtractNatives(String minecraftVersion, File nativesDir) throws Exception {
+    List<String> nativeUrls = getNativeLibraryUrls(minecraftVersion);
+
+    // Ensure natives directory exists
+    if (!nativesDir.exists()) {
+        nativesDir.mkdirs();
     }
-    return baseURL + fileName + ".jar.lzma";
-  }
+
+    for (String nativeUrl : nativeUrls) {
+        String fileName = nativeUrl.substring(nativeUrl.lastIndexOf('/') + 1);
+        File nativeJar = new File(tempDir, fileName);
+
+        // Download if not already present
+        if (!nativeJar.exists()) {
+            DownloadUtils.downloadFile(nativeUrl, nativeJar.getAbsolutePath(), fileName, null, listener);
+        }
+
+        // Extract the native JAR into the natives directory using zip4j
+        ZipFile zipFile = new ZipFile(nativeJar);
+        @SuppressWarnings("unchecked")
+        List<FileHeader> fileHeaders = zipFile.getFileHeaders();
+        for (FileHeader fileHeader : fileHeaders) {
+            String entryName = fileHeader.getFileName();
+            if (fileHeader.isDirectory() || entryName.startsWith("META-INF")) {
+                continue;
+            }
+            File outFile = new File(nativesDir, entryName);
+            outFile.getParentFile().mkdirs();
+            zipFile.extractFile(fileHeader, nativesDir.getAbsolutePath());
+        }
+    }
+}
+
 
   public boolean checkMCUpdate() {
     if (!GameUpdater.binDir.exists()) {
@@ -269,38 +374,6 @@ public class GameUpdater implements DownloadListener {
       Util.log("An error occurred while extracting %s", compressedFile.getPath());
       e.printStackTrace();
     }
-  }
-
-  private File getNatives() throws Exception {
-    String osName = System.getProperty("os.name").toLowerCase();
-    String fname;
-
-    if (osName.contains("win")) {
-      fname = "windows_natives";
-    } else if (osName.contains("mac")) {
-      fname = "macosx_natives";
-    } else if (osName.contains("solaris") || osName.contains("sunos")) {
-      fname = "solaris_natives";
-    } else if (osName.contains("linux") || osName.contains("unix")) {
-      fname = "linux_natives";
-    } else {
-      throw new UnsupportedOSException();
-    }
-
-    if (!tempDir.exists())
-      tempDir.mkdir();
-
-    stateChanged("Downloading Native LWJGL files...", -1);
-    DownloadUtils.downloadFile(getNativesUrl(fname), tempDir.getPath() + File.separator + (!SettingsUtil.isLatestLWJGL() ? "natives.jar.lzma" : "natives.zip"));
-    stateChanged("Downloaded Native LWJGL files...", 100);
-
-    if (!SettingsUtil.isLatestLWJGL()) {
-      stateChanged("Extracting Native LWJGL files...", -1);
-      extractLZMA(GameUpdater.tempDir.getPath() + File.separator + "natives.jar.lzma", GameUpdater.tempDir.getPath() + File.separator + "natives.zip");
-      stateChanged("Extracted Native LWJGL files...", 100);
-    }
-
-    return new File(tempDir.getPath() + File.separator + "natives.jar.lzma");
   }
 
   public void updateSpoutcraft() throws Exception {
@@ -544,13 +617,6 @@ public class GameUpdater implements DownloadListener {
     }
 
     out.close();
-  }
-
-  // I know that is is not the best method but screw it, I am tired of trying
-  // to do it myself :P
-  private void extractLZMA(String in, String out) throws Exception {
-    String[] args = { "d", in, out };
-    LzmaAlone.main(args);
   }
 
   public Set<ClassFile> getFiles(File dir, String rootDir) {

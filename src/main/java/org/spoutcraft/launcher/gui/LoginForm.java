@@ -761,9 +761,6 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
           if (mcUpdate) {
             gameUpdater.updateMC();
           }
-          if (spoutUpdate) {
-            gameUpdater.updateSpoutcraft();
-          }
           if (modpackUpdate) {
             gameUpdater.updateModPackMods();
           }

@@ -1,6 +1,14 @@
 package org.spoutcraft.launcher;
 
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.net.URL;
 
 import org.bukkit.util.config.Configuration;
 import org.spoutcraft.launcher.async.DownloadListener;
@@ -34,8 +42,38 @@ public class ModpackBuild {
   }
 
   public String getMinecraftURL(String user) {
-    return "https://assets.minecraft.net/" + this.minecraftVersion.replace('.', '_') + "/minecraft.jar";
-  }
+    try {
+        // 1. Get the version manifest
+        URL manifestUrl = new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json");
+        HttpURLConnection manifestConn = (HttpURLConnection) manifestUrl.openConnection();
+        JsonParser parser = new JsonParser();
+        JsonObject manifest = parser.parse(new InputStreamReader(manifestConn.getInputStream(), StandardCharsets.UTF_8)).getAsJsonObject();
+
+        // 2. Find the version's JSON URL
+        String versionId = this.minecraftVersion;
+        String versionJsonUrl = null;
+        for (JsonElement version : manifest.getAsJsonArray("versions")) {
+            JsonObject v = version.getAsJsonObject();
+            if (v.get("id").getAsString().equals(versionId)) {
+                versionJsonUrl = v.get("url").getAsString();
+                break;
+            }
+        }
+        if (versionJsonUrl == null) {
+            throw new RuntimeException("Version not found in manifest: " + versionId);
+        }
+
+        // 3. Fetch the version JSON and extract client.jar URL
+        URL versionUrl = new URL(versionJsonUrl);
+        HttpURLConnection versionConn = (HttpURLConnection) versionUrl.openConnection();
+        JsonObject versionJson = parser.parse(new InputStreamReader(versionConn.getInputStream(), StandardCharsets.UTF_8)).getAsJsonObject();
+        String jarUrl = versionJson.getAsJsonObject("downloads").getAsJsonObject("client").get("url").getAsString();
+
+        return jarUrl;
+    } catch (Exception e) {
+        throw new RuntimeException("Failed to get Minecraft client jar URL: " + e.getMessage(), e);
+    }
+}
 
   public void setDownloadListener(DownloadListener listener) {
     this.listener = listener;
