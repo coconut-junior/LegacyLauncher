@@ -36,7 +36,6 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -79,17 +78,15 @@ import org.spoutcraft.launcher.SettingsUtil;
 import org.spoutcraft.launcher.SpoutFocusTraversalPolicy;
 import org.spoutcraft.launcher.Util;
 import org.spoutcraft.launcher.async.DownloadListener;
-import org.spoutcraft.launcher.exception.AccountMigratedException;
-import org.spoutcraft.launcher.exception.BadLoginException;
-import org.spoutcraft.launcher.exception.MCNetworkException;
-import org.spoutcraft.launcher.exception.MinecraftUserNotPremiumException;
 import org.spoutcraft.launcher.exception.NoMirrorsAvailableException;
-import org.spoutcraft.launcher.exception.OutdatedMCLauncherException;
 import org.spoutcraft.launcher.gui.widget.ComboBoxRenderer;
 import org.spoutcraft.launcher.modpacks.ModLibraryYML;
 import org.spoutcraft.launcher.modpacks.ModPackListYML;
 import org.spoutcraft.launcher.modpacks.ModPackUpdater;
 import org.spoutcraft.launcher.modpacks.ModPackYML;
+
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 
 public class LoginForm extends JFrame implements ActionListener, DownloadListener, KeyListener, WindowListener {
 
@@ -621,17 +618,6 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
   }
 
   public void doLogin() {
-    doLogin(usernameField.getSelectedItem().toString(), new String(passwordField.getPassword()), false);
-  }
-
-  public void doLogin(final String user, final String pass) {
-    doLogin(user, pass, true);
-  }
-
-  public void doLogin(final String user, final String pass, final boolean cmdLine) {
-    if (user == null || user.isEmpty() || pass == null || pass.isEmpty()) {
-      return;
-    }
     this.loginButton.setEnabled(false);
     this.optionsButton.setEnabled(false);
     this.modsButton.setEnabled(false);
@@ -644,75 +630,26 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
       protected Boolean doInBackground() {
         progressBar.setVisible(true);
         progressBar.setString("Connecting to www.minecraft.net...");
-        String password = pass.toString();
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        
         try {
           System.out.println("Attempting login...");
-          values = MinecraftUtils.doLogin(user, pass, progressBar);
+          values = MinecraftUtils.doLogin(progressBar);
+          StringSelection stringSelection = new StringSelection(values.toString());
+          clipboard.setContents(stringSelection, null);
+
+
           return true;
-        } catch (AccountMigratedException e) {
-          JOptionPane.showMessageDialog(getParent(), "Account migrated, use e-mail as username");
-          this.cancel(true);
-          progressBar.setVisible(false);
-        } catch (BadLoginException e) {
-          JOptionPane.showMessageDialog(getParent(), "Incorrect usernameField/passwordField combination");
-          this.cancel(true);
-          progressBar.setVisible(false);
-        } catch (MinecraftUserNotPremiumException e) {
-          JOptionPane.showMessageDialog(getParent(), "You purchase a minecraft account to play");
-          this.cancel(true);
-          progressBar.setVisible(false);
-        } catch (MCNetworkException e) {
-          UserPasswordInformation info = null;
-
-          for (String username : usernames.keySet()) {
-            if (username.equalsIgnoreCase(user)) {
-              info = usernames.get(username);
-              break;
-            }
-          }
-
-          boolean authFailed = (info == null);
-
-          if (!authFailed) {
-            if (info.isHash) {
-              try {
-                MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                byte[] hash = digest.digest(pass.getBytes());
-                for (int i = 0; i < hash.length; i++) {
-                  if (hash[i] != info.passwordHash[i]) {
-                    authFailed = true;
-                    break;
-                  }
-                }
-              } catch (NoSuchAlgorithmException ex) {
-                authFailed = true;
-              }
-            } else {
-              authFailed = !(password.equals(info.password));
-            }
-          }
-
-          if (authFailed) {
-            JOptionPane.showMessageDialog(getParent(), "Unable to authenticate account with minecraft.net");
-          } else {
-            int result = JOptionPane.showConfirmDialog(getParent(), "Would you like to run in offline mode?", "Unable to Connect to Minecraft.net", JOptionPane.YES_NO_OPTION);
-            if (result == JOptionPane.YES_OPTION) {
-              values = new AuthResponse();
-              return true;
-            }
-          }
-          this.cancel(true);
-          progressBar.setVisible(false);
-        } catch (OutdatedMCLauncherException e) {
-          JOptionPane.showMessageDialog(getParent(), "Incompatible Login Version.");
-          progressBar.setVisible(false);
-        } catch (UnsupportedEncodingException e) {
-          e.printStackTrace();
-          this.cancel(true);
-          progressBar.setVisible(false);
         } catch (Exception e) {
-          e.printStackTrace();
+          this.cancel(true);
+          progressBar.setString(e.getMessage());
+
+          //copy error
+          String myString = e.getMessage();
+          StringSelection stringSelection = new StringSelection(myString);
+          clipboard.setContents(stringSelection, null);
         }
+
         enableUI();
         this.cancel(true);
         return false;
@@ -726,6 +663,10 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
         LoginForm.pass = pass;
         String profileName = values.getSelectedProfile().getName();
 
+        progressBar.setString(profileName);
+        usernames.put(profileName, new UserPasswordInformation(""));
+        writeUsernameList();
+
         MessageDigest digest = null;
 
         try {
@@ -735,19 +676,6 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
 
         gameUpdater.user = usernameField.getSelectedItem().toString(); // values[2].trim();
         gameUpdater.downloadTicket = "1";
-        if (!cmdLine) {
-          String password = new String(passwordField.getPassword());
-          if (rememberCheckbox.isSelected()) {
-            usernames.put(gameUpdater.user, new UserPasswordInformation(password, profileName));
-          } else {
-            if (digest == null) {
-              usernames.put(gameUpdater.user, new UserPasswordInformation(""));
-            } else {
-              usernames.put(gameUpdater.user, new UserPasswordInformation(digest.digest(password.getBytes())));
-            }
-          }
-          writeUsernameList();
-        }
 
         SwingWorker<Boolean, String> updateThread = new SwingWorker<Boolean, String>() {
 
