@@ -506,7 +506,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
             usernames.put(user, new UserPasswordInformation(password));
           }
           this.usernameField.addItem(user);
-          Util.log("Setting username to" + user);
+          Util.log("Setting username to " + user);
         }
       } catch (EOFException ignored) {
       }
@@ -669,6 +669,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
         String profileName = values.getSelectedProfile().getName();
         usernames.put(profileName, new UserPasswordInformation("password"));
         writeUsernameList();
+        readUsedUsernames();
 
         MessageDigest digest = null;
 
