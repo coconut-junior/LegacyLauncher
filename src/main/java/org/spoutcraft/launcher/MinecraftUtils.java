@@ -115,36 +115,36 @@ public class MinecraftUtils {
 
     // Step 5: Minecraft Profile
     JsonObject profileResponse = getJson("https://api.minecraftservices.com/minecraft/profile", mcAccessToken);
-String uuid = profileResponse.get("id").getAsString();
-String name = profileResponse.get("name").getAsString();
+    String uuid = profileResponse.get("id").getAsString();
+    String name = profileResponse.get("name").getAsString();
 
-// Build Profile object
-Profile profile = new Profile(uuid, name);
+    // Build Profile object
+    Profile profile = new Profile(uuid, name);
 
-// Build AuthResponse
-AuthResponse authResponse = new AuthResponse();
+    // Build AuthResponse
+    AuthResponse authResponse = new AuthResponse();
 
-// Use reflection to set private fields, or if fields are package-private, set directly
-// But the best way is to use a constructor if available, or extend AuthResponse with setters
+    // Use reflection to set private fields, or if fields are package-private, set directly
+    // But the best way is to use a constructor if available, or extend AuthResponse with setters
 
-// Set accessToken and selectedProfile using reflection (if needed)
-try {
-    java.lang.reflect.Field accessTokenField = AuthResponse.class.getDeclaredField("accessToken");
-    accessTokenField.setAccessible(true);
-    accessTokenField.set(authResponse, mcAccessToken);
+    // Set accessToken and selectedProfile using reflection (if needed)
+    try {
+        java.lang.reflect.Field accessTokenField = AuthResponse.class.getDeclaredField("accessToken");
+        accessTokenField.setAccessible(true);
+        accessTokenField.set(authResponse, mcAccessToken);
 
-    java.lang.reflect.Field selectedProfileField = AuthResponse.class.getDeclaredField("selectedProfile");
-    selectedProfileField.setAccessible(true);
-    selectedProfileField.set(authResponse, profile);
+        java.lang.reflect.Field selectedProfileField = AuthResponse.class.getDeclaredField("selectedProfile");
+        selectedProfileField.setAccessible(true);
+        selectedProfileField.set(authResponse, profile);
 
-    java.lang.reflect.Field availableProfilesField = AuthResponse.class.getDeclaredField("availableProfiles");
-    availableProfilesField.setAccessible(true);
-    availableProfilesField.set(authResponse, new Profile[]{profile});
-} catch (Exception e) {
-    throw new MCNetworkException("Failed to set AuthResponse fields: " + e.getMessage());
-}
+        java.lang.reflect.Field availableProfilesField = AuthResponse.class.getDeclaredField("availableProfiles");
+        availableProfilesField.setAccessible(true);
+        availableProfilesField.set(authResponse, new Profile[]{profile});
+    } catch (Exception e) {
+        throw new MCNetworkException("Failed to set AuthResponse fields: " + e.getMessage());
+    }
 
-return authResponse;
+    return authResponse;
 }
 
 // Helper: POST JSON and parse response

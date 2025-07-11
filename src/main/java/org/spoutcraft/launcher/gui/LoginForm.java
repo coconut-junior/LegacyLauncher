@@ -194,6 +194,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     passwordField = new JPasswordField();
     passwordField.setFont(new Font("Arial", Font.PLAIN, 11));
     passwordField.setBounds(143, 42, 119, 22);
+    passwordField.setText("password");
 
     loginSkin1 = new JAccountButton("Login as Player");
     loginSkin1.setFont(new Font("Arial", Font.PLAIN, 11));
@@ -237,6 +238,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     rememberCheckbox.setFont(new Font("Arial", Font.PLAIN, 11));
 
     rememberCheckbox.setOpaque(false);
+
 
     editorPane.setContentType("text/html");
 
@@ -282,6 +284,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     usernameField.setEditable(true);
     contentPane.setLayout(null);
     rememberCheckbox.setBounds(144, 66, 93, 23);
+    rememberCheckbox.setSelected(true);
     // contentPane.add(lblLogo);
     contentPane.add(modpackList);
     optionsButton.setBounds(272, 41, 86, 23);
@@ -503,6 +506,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
             usernames.put(user, new UserPasswordInformation(password));
           }
           this.usernameField.addItem(user);
+          Util.log("Setting username to" + user);
         }
       } catch (EOFException ignored) {
       }
@@ -660,11 +664,10 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
         if (values == null || values.getError() != null) {
           return;
         }
-        LoginForm.pass = pass;
-        String profileName = values.getSelectedProfile().getName();
 
-        progressBar.setString(profileName);
-        usernames.put(profileName, new UserPasswordInformation(""));
+        LoginForm.pass = "password";
+        String profileName = values.getSelectedProfile().getName();
+        usernames.put(profileName, new UserPasswordInformation("password"));
         writeUsernameList();
 
         MessageDigest digest = null;
