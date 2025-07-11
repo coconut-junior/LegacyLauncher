@@ -37,6 +37,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.jar.JarFile;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -51,6 +52,7 @@ import org.spoutcraft.launcher.async.DownloadListener;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.nimbusds.jose.util.ArrayUtils;
 
 public class GameUpdater implements DownloadListener {
   public static final String LAUNCHER_DIRECTORY = "launcher";
@@ -155,6 +157,18 @@ public class GameUpdater implements DownloadListener {
     System.setProperty("minecraft.applet.TargetDirectory", modpackDir.getAbsolutePath());
   }
 
+  public static String[] concatenate(String[] first, String[] second)
+  {
+      List<String> result = new ArrayList<>();
+  
+      Stream.of(first, second)
+              .flatMap(Stream::of)
+              .map(x -> (String)x)
+              .forEach(result::add);
+  
+      return result.toArray(new String[0]);
+  }
+
   public void updateMC() throws Exception {
 
     binDir.mkdir();
@@ -177,6 +191,9 @@ public class GameUpdater implements DownloadListener {
 
     // Download LWJGL libraries dynamically
     String[] lwjglUrls = getLwjglUrls(minecraftVersion);
+    String[] jinputArr = { "https://libraries.minecraft.net/net/java/jinput/jinput/2.0.5/jinput-2.0.5.jar" };
+    lwjglUrls = concatenate(lwjglUrls, jinputArr);
+    
     for (String lwjglUrl : lwjglUrls) {
         String fileName = lwjglUrl.substring(lwjglUrl.lastIndexOf('/') + 1);
         File libCache = new File(cacheDir, fileName);
@@ -185,14 +202,14 @@ public class GameUpdater implements DownloadListener {
         } else {
             stateChanged("Copying " + fileName + " from cache", 0);
         }
-
+        
         // Determine the expected output name
         String expectedName = null;
         if (fileName.contains("lwjgl_util")) {
             expectedName = "lwjgl_util.jar";
         } else if (fileName.contains("lwjgl") && !fileName.contains("util")) {
             expectedName = "lwjgl.jar";
-        } else if (fileName.contains("jinput")) {
+        } else if (fileName.contains("jinput-2.0.5.jar")) {
             expectedName = "jinput.jar";
         }
 
@@ -205,6 +222,15 @@ public class GameUpdater implements DownloadListener {
 
     File nativesDirectory = new File(binDir, "natives");
     downloadAndExtractNatives(minecraftVersion, nativesDirectory);
+
+    //fix natives naming
+    File nativesDir = new File(binDir, "natives");
+    File jnilib = new File(nativesDir, "liblwjgl.jnilib");
+    File dylib = new File(nativesDir, "liblwjgl.dylib");
+    if (jnilib.exists() && !dylib.exists()) {
+        copy(jnilib, dylib);
+        Util.log("Copied liblwjgl.jnilib to liblwjgl.dylib for macOS compatibility.");
+    }
 
     MinecraftYML.setInstalledVersion(minecraftVersion);
   }
