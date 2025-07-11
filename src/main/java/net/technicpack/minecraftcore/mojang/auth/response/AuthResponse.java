@@ -40,6 +40,13 @@ public class AuthResponse extends Response {
         return clientToken;
     }
 
+    public String getSessionId() {
+        if (accessToken != null && selectedProfile != null && selectedProfile.getId() != null) {
+            return accessToken + ":" + selectedProfile.getId();
+        }
+        return null;
+    }
+
     public Profile[] getAvailableProfiles() {
         return availableProfiles;
     }

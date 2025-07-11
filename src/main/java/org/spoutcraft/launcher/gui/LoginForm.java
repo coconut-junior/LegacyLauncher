@@ -146,6 +146,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     usernameField.setFont(new Font("Arial", Font.PLAIN, 11));
     usernameField.addActionListener(this);
     usernameField.setOpaque(false);
+    usernameField.setEditable(false);
     offlineMode.setFont(new Font("Arial", Font.PLAIN, 11));
     offlineMode.setOpaque(false);
     offlineMode.addActionListener(this);
@@ -195,6 +196,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     passwordField.setFont(new Font("Arial", Font.PLAIN, 11));
     passwordField.setBounds(143, 42, 119, 22);
     passwordField.setText("password");
+    passwordField.setEditable(false);
 
     loginSkin1 = new JAccountButton("Login as Player");
     loginSkin1.setFont(new Font("Arial", Font.PLAIN, 11));
@@ -281,7 +283,6 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     passwordField.addKeyListener(this);
     rememberCheckbox.addKeyListener(this);
 
-    usernameField.setEditable(true);
     contentPane.setLayout(null);
     rememberCheckbox.setBounds(144, 66, 93, 23);
     rememberCheckbox.setSelected(true);
@@ -351,6 +352,9 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
       offlinePane.setVisible(true);
       loginPane.setVisible(false);
     }
+
+    usernameField.setEnabled(false);
+    passwordField.setEnabled(false);
   }
 
   public void loadLauncherData() {
@@ -815,7 +819,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
 
     LauncherFrame launcher = new LauncherFrame();
     launcher.setLoginForm(this);
-    int result = (Main.isOffline) ? launcher.runGame(null, null, null, null) : launcher.runGame(values.getSelectedProfile().getName(), values.getClientToken(), "0", pass);
+    int result = (Main.isOffline) ? launcher.runGame(null, null, null, null) : launcher.runGame(values.getSelectedProfile().getName(), values.getSessionId(), "0", pass);
     if (result == LauncherFrame.SUCCESSFUL_LAUNCH) {
       LoginForm.updateDialog.dispose();
       LoginForm.updateDialog = null;

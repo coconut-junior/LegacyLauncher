@@ -78,6 +78,7 @@ public class LauncherFrame extends JFrame implements WindowListener {
   }
 
   public int runGame(String user, String session, String downloadTicket, String mcpass) {
+    System.setProperty("http.proxyHost", "betacraft.uk");
     Applet applet = null;
     try {
       applet = LauncherController.getMinecraftApplet();
