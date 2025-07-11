@@ -263,11 +263,28 @@ public class GameUpdater implements DownloadListener {
       JsonObject versionJson = parser.parse(new InputStreamReader(versionConn.getInputStream(), StandardCharsets.UTF_8))
           .getAsJsonObject();
 
-      // 2. Find native libraries for macOS
+      // Detect OS
+      String os = System.getProperty("os.name").toLowerCase();
+      String nativeKey;
+      if (os.contains("win")) {
+        nativeKey = "windows";
+      } else if (os.contains("mac") || os.contains("osx")) {
+        nativeKey = "osx";
+      } else if (os.contains("nux") || os.contains("nix")) {
+        nativeKey = "linux";
+      } else {
+        nativeKey = null;
+      }
+
+      if (nativeKey == null) {
+        throw new RuntimeException("Unsupported OS for native library download: " + os);
+      }
+
+      // 2. Find native libraries for the current OS
       for (JsonElement libElem : versionJson.getAsJsonArray("libraries")) {
         JsonObject lib = libElem.getAsJsonObject();
-        if (lib.has("natives") && lib.getAsJsonObject("natives").has("osx")) {
-          String classifier = lib.getAsJsonObject("natives").get("osx").getAsString();
+        if (lib.has("natives") && lib.getAsJsonObject("natives").has(nativeKey)) {
+          String classifier = lib.getAsJsonObject("natives").get(nativeKey).getAsString();
           JsonObject downloads = lib.getAsJsonObject("downloads");
           if (downloads.has("classifiers") && downloads.getAsJsonObject("classifiers").has(classifier)) {
             String url = downloads.getAsJsonObject("classifiers").getAsJsonObject(classifier).get("url").getAsString();
