@@ -147,10 +147,6 @@ public class Main {
     System.setProperty("java.net.preferIPv4Stack", "true");
     System.setProperty("java.net.preferIPv6Stack", "false");
 
-    SystemConsoleListener listener = new SystemConsoleListener();
-
-    listener.initialize();
-
     Util.log("------------------------------------------");
     Util.log("Launcher is starting....");
     Util.log("Launcher Build: '%s'", getBuild());

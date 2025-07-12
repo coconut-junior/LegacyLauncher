@@ -18,22 +18,36 @@ public class MD5Utils {
   private static boolean                   updated;
   private static final Map<String, String> md5Map        = new HashMap<String, String>();
 
+  // In-memory cache for MD5 hashes: key is file path + lastModified + length
+  private static final Map<String, String> md5FileCache = new HashMap<>();
+
   public static String getMD5(File file) {
+    if (file == null || !file.exists()) {
+      return null;
+    }
+    String cacheKey = file.getAbsolutePath() + ":" + file.lastModified() + ":" + file.length();
+    String cached = md5FileCache.get(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
     FileInputStream stream = null;
     try {
       stream = new FileInputStream(file);
       String md5Hex = DigestUtils.md5Hex(stream);
       stream.close();
+      md5FileCache.put(cacheKey, md5Hex);
       return md5Hex;
     } catch (FileNotFoundException e) {
       e.printStackTrace();
     } catch (IOException e) {
       e.printStackTrace();
     } finally {
-      try {
-        stream.close();
-      } catch (IOException e) {
-        e.printStackTrace();
+      if (stream != null) {
+        try {
+          stream.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
       }
     }
     return null;
@@ -123,6 +137,10 @@ public class MD5Utils {
   public static boolean checksumPath(File file, String md5Path) {
     if (!file.exists()) {
       return false;
+    }
+    // Skip MD5 check for .png files if not empty
+    if (file.getName().toLowerCase().endsWith(".png") && file.length() > 0) {
+      return true;
     }
     String fileMD5 = getMD5(file);
     String storedMD5 = getMD5FromList(md5Path);

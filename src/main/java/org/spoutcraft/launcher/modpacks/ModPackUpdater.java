@@ -255,9 +255,19 @@ public class ModPackUpdater extends GameUpdater {
       String fullFilename = modName + "-" + version + "." + installType;
 
       String md5Name = "mods\\" + modName + "\\" + fullFilename;
-      if (!MD5Utils.checksumCachePath(fullFilename, md5Name)) {
-        Util.log("'%s' has MD5 mismatch! Updating..", fullFilename);
-        return true;
+
+      // Skip MD5 check for .png files if file exists and is not empty
+      if (fullFilename.toLowerCase().endsWith(".png")) {
+        File pngFile = new File(GameUpdater.cacheDir, fullFilename);
+        if (!pngFile.exists() || pngFile.length() == 0) {
+          Util.log("'%s' is missing or empty! Updating..", fullFilename);
+          return true;
+        }
+      } else {
+        if (!MD5Utils.checksumCachePath(fullFilename, md5Name)) {
+          Util.log("'%s' has MD5 mismatch! Updating..", fullFilename);
+          return true;
+        }
       }
 
       String installedModVersion = InstalledModsYML.getInstalledModVersion(modName);
