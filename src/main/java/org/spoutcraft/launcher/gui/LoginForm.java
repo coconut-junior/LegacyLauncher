@@ -70,7 +70,7 @@ import org.spoutcraft.launcher.GameUpdater;
 import org.spoutcraft.launcher.LibrariesYML;
 import org.spoutcraft.launcher.MD5Utils;
 import org.spoutcraft.launcher.Main;
-import org.spoutcraft.launcher.MinecraftUtils;
+import org.spoutcraft.launcher.MicrosoftAuth;
 import org.spoutcraft.launcher.MinecraftYML;
 import org.spoutcraft.launcher.MirrorUtils;
 import org.spoutcraft.launcher.PlatformUtils;
@@ -642,7 +642,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
         
         try {
           System.out.println("Attempting login...");
-          values = MinecraftUtils.doLogin(progressBar);
+          values = MicrosoftAuth.doLogin(progressBar);
           StringSelection stringSelection = new StringSelection(values.toString());
           clipboard.setContents(stringSelection, null);
 

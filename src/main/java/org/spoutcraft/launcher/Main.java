@@ -118,7 +118,7 @@ public class Main {
     } catch (Exception ex) {
       ex.printStackTrace();
     }
-    MinecraftUtils.setOptions(options);
+    MicrosoftAuth.setOptions(options);
     recursion = new File(PlatformUtils.getWorkingDirectory(), "rtemp");
 
     args_temp = args;

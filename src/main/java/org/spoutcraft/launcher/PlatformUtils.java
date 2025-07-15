@@ -50,7 +50,7 @@ public class PlatformUtils {
   }
 
   public static File getWorkingDirectory(String applicationName) {
-    boolean isPortable = MinecraftUtils.getOptions().isPortable();
+    boolean isPortable = MicrosoftAuth.getOptions().isPortable();
     if (isPortable) {
       return new File("." + LAUNCHER_DIR);
     }

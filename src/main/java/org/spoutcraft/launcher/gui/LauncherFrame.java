@@ -30,7 +30,7 @@ import javax.swing.JOptionPane;
 import net.minecraft.Launcher;
 
 import org.spoutcraft.launcher.LauncherController;
-import org.spoutcraft.launcher.MinecraftUtils;
+import org.spoutcraft.launcher.MicrosoftAuth;
 import org.spoutcraft.launcher.PlatformUtils;
 import org.spoutcraft.launcher.Util;
 import org.spoutcraft.launcher.exception.CorruptedMinecraftJarException;
@@ -116,13 +116,13 @@ public class LauncherFrame extends JFrame implements WindowListener {
     minecraft.addParameter("mppass", mcpass);
     minecraft.addParameter("spoutcraftlauncher", "true");
     minecraft.addParameter("stand-alone", "true");
-    minecraft.addParameter("portable", String.valueOf(MinecraftUtils.getOptions().isPortable()));
+    minecraft.addParameter("portable", String.valueOf(MicrosoftAuth.getOptions().isPortable()));
     minecraft.addParameter("directory", launcherPath);
     Util.log("Loading Launcher from '%s'", launcherPath);
-    if (MinecraftUtils.getOptions().getServer() != null) {
-      minecraft.addParameter("server", MinecraftUtils.getOptions().getServer());
-      if (MinecraftUtils.getOptions().getPort() != null) {
-        minecraft.addParameter("port", MinecraftUtils.getOptions().getPort());
+    if (MicrosoftAuth.getOptions().getServer() != null) {
+      minecraft.addParameter("server", MicrosoftAuth.getOptions().getServer());
+      if (MicrosoftAuth.getOptions().getPort() != null) {
+        minecraft.addParameter("port", MicrosoftAuth.getOptions().getPort());
       }
     }
 

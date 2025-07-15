@@ -32,7 +32,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
-public class MinecraftUtils {
+public class MicrosoftAuth {
 
   private static Options options = null;
 
@@ -41,7 +41,7 @@ public class MinecraftUtils {
   }
 
   public static void setOptions(Options options) {
-    MinecraftUtils.options = options;
+    MicrosoftAuth.options = options;
   }
 
   public static AuthResponse doLogin(JProgressBar progress) throws IOException, MCNetworkException {
