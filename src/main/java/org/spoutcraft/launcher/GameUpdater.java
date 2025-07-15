@@ -225,11 +225,14 @@ public class GameUpdater implements DownloadListener {
 
     //fix natives naming
     File nativesDir = new File(binDir, "natives");
-    File jnilib = new File(nativesDir, "liblwjgl.jnilib");
-    File dylib = new File(nativesDir, "liblwjgl.dylib");
-    if (jnilib.exists() && !dylib.exists()) {
-        copy(jnilib, dylib);
-        Util.log("Copied liblwjgl.jnilib to liblwjgl.dylib for macOS compatibility.");
+    File[] jnilibFiles = nativesDir.listFiles((dir, name) -> name.endsWith(".jnilib"));
+
+    for (File file : jnilibFiles) {
+      String newName = file.getName().replace(".jnilib", ".dylib");
+      File newFile = new File(nativesDir, newName);
+      if (!file.renameTo(newFile)) {
+        throw new IOException("Failed to rename " + file.getName() + " to " + newName);
+      }
     }
 
     MinecraftYML.setInstalledVersion(minecraftVersion);
