@@ -116,6 +116,7 @@ public class DownloadUtils {
   }
 
   public static boolean downloadFile(String relativePath) {
+
     if (Main.isOffline)
       return false;
     if (MD5Utils.checksumPath(relativePath)) {

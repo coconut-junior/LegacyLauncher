@@ -3,17 +3,24 @@ package org.spoutcraft.launcher;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.logging.Logger;
 
+import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 
+import com.google.common.io.Resources;
 import com.google.gson.Gson;
+import com.nimbusds.jose.util.Resource;
+
 import org.spoutcraft.launcher.modpacks.ModPackListYML;
 
 public class Util {
@@ -156,6 +163,26 @@ public class Util {
     if (overrideIcon.exists())
       return overrideIcon;
     resourcesDir = new File(defaultPath, RESOURCES_PATH);
+
+    //tekkit logo does not download, so we need to copy it from resources
+    if(resourcesDir.getPath().contains("tekkit/resources")) {
+      URL url = Main.class.getResource("/org/spoutcraft/launcher/tekkit/logo.png");
+      File tekkitLogo = new File(resourcesDir.getPath(), "logo.png");
+      
+      try (InputStream is = url.openStream();
+           OutputStream os = new java.io.FileOutputStream(tekkitLogo)) {
+        byte[] buffer = new byte[1024];
+        int length;
+        while ((length = is.read(buffer)) > 0) {
+          os.write(buffer, 0, length);
+        }
+        System.out.println("Successfully wrote tekkit logo to: " + tekkitLogo.getAbsolutePath());
+      } catch (IOException e) {
+        System.err.println("Failed to write tekkit logo: " + e.getMessage());
+        e.printStackTrace();
+      }
+    }
+
     overrideIcon = new File(resourcesDir, filename);
     return overrideIcon;
   }
