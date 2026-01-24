@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 
@@ -109,6 +110,17 @@ public class Main {
   }
 
   public static void main(String[] args) throws Exception {
+    // Check Java version - exit if Java 17 or later
+    String javaVersion = System.getProperty("java.version");
+    int majorVersion = Integer.parseInt(javaVersion.split("\\.")[0]);
+    if (majorVersion >= 9) {
+      String javaVersionErr = "Error: This launcher requires Java 8 or earlier. You are using Java " + javaVersion;
+      JOptionPane.showMessageDialog(null,javaVersionErr,"Wrong Version",JOptionPane.ERROR_MESSAGE);
+
+      System.err.println(javaVersionErr);
+      System.exit(1);
+    }
+
     LoadingScreen ls = new LoadingScreen();
     ls.setVisible(true);
     build = Util.getBuild();
