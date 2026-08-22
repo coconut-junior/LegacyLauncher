@@ -14,15 +14,16 @@ class BackgroundPanel extends JPanel {
   public void setBackgroundImage(ImageIcon imageIcon) {
     backgroundImageIcon = imageIcon;
     backgroundImage = backgroundImageIcon.getImage();
-    validate();
-    repaint(0, 0, backgroundImageIcon.getIconWidth(), backgroundImageIcon.getIconHeight());
+    revalidate();
+    repaint();
   }
 
   @Override
-  public void paint(Graphics g) {
-    // Draws the img to the BackgroundPanel.
-    if (backgroundImage != null)
-      g.drawImage(backgroundImage, 0, 0, null);
-    super.paint(g);
+  protected void paintComponent(Graphics g) {
+    super.paintComponent(g);
+    // Draw the background image scaled to fill the panel
+    if (backgroundImage != null) {
+      g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+    }
   }
 }

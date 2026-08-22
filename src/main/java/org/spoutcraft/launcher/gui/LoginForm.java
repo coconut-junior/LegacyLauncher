@@ -38,6 +38,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.awt.Image;
+import javax.imageio.ImageIO;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -60,10 +62,13 @@ import javax.swing.JPasswordField;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
+import javax.swing.ImageIcon;
 import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
 import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 
 import net.technicpack.minecraftcore.mojang.auth.response.AuthResponse;
 import org.spoutcraft.launcher.GameUpdater;
@@ -181,6 +186,24 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     modpackList.setMaximumRowCount(4);
     modpackList.setSelectedItem(SettingsUtil.getModPackSelection());
     modpackList.addActionListener(this);
+    // Ensure background is repainted when the combo popup closes to avoid painting artifacts
+    modpackList.addPopupMenuListener(new PopupMenuListener() {
+      @Override
+      public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+      }
+
+      @Override
+      public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+        contentPane.revalidate();
+        contentPane.repaint();
+      }
+
+      @Override
+      public void popupMenuCanceled(PopupMenuEvent e) {
+        contentPane.revalidate();
+        contentPane.repaint();
+      }
+    });
 
     JLabel lblMinecraftUsername = new JLabel("Minecraft Email: ");
     lblMinecraftUsername.setFont(new Font("Arial", Font.PLAIN, 11));
@@ -247,8 +270,9 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     readUsedUsernames();
 
     editorPane.setEditable(false);
-    editorPane.setOpaque(false);
-    editorPane.setBackground(new Color(255, 255, 255, 0));
+    // Make tumbler feed background opaque so it doesn't show the launcher background
+    editorPane.setOpaque(true);
+    editorPane.setBackground(new Color(255, 255, 255, 200));
     // editorPane.setBorder(null);
     // editorPane.setMargin(new Insets(0,0,0,0));
     editorPane.setFocusable(false);
@@ -258,8 +282,9 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     JScrollPane scrollPane = new JScrollPane(editorPane);
     scrollPane.setBounds(473, 11, 372, 340);
     scrollPane.setBorder(null);
-    scrollPane.setOpaque(false);
-    scrollPane.getViewport().setOpaque(false);
+    // Ensure the scroll pane and its viewport are opaque so the editorPane background is visible
+    scrollPane.setOpaque(true);
+    scrollPane.getViewport().setOpaque(true);
     scrollPane.getViewport().setBorder(null);
 
     editorPane.setCaretPosition(0);
@@ -844,6 +869,53 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     File cacheDir = new File(PlatformUtils.getWorkingDirectory(), "cache");
     cacheDir.mkdir();
     File backgroundImage = new File(cacheDir, "launcher_background.png");
+    // If a modpack is selected, look in multiple candidate screenshot locations and pick one at random
+    try {
+      String pack = ModPackListYML.currentModPack;
+      java.util.List<File> candidates = new java.util.ArrayList<>();
+      if (pack != null && !pack.isEmpty()) {
+        // 1) standard modpack directory under workDir/pack/resources/screenshots
+        if (ModPackListYML.currentModPackDirectory != null) {
+          candidates.add(new File(ModPackListYML.currentModPackDirectory, "resources/screenshots"));
+        }
+        // 2) working dir / pack / resources / screenshots
+        candidates.add(new File(PlatformUtils.getWorkingDirectory(), pack + File.separator + "resources" + File.separator + "screenshots"));
+        // 3) working dir / pack / screenshots (some setups use this path)
+        candidates.add(new File(PlatformUtils.getWorkingDirectory(), pack + File.separator + "screenshots"));
+        // 4) user's home .techniclauncher/<pack>/screenshots (common local cache)
+        candidates.add(new File(System.getProperty("user.home"), ".techniclauncher" + File.separator + pack + File.separator + "screenshots"));
+        // 5) legacy: GameUpdater.workDir / pack / resources / screenshots
+        candidates.add(new File(GameUpdater.workDir, pack + File.separator + "resources" + File.separator + "screenshots"));
+      }
+
+      for (File screenshotsDir : candidates) {
+        if (screenshotsDir != null && screenshotsDir.exists() && screenshotsDir.isDirectory()) {
+          File[] imgs = screenshotsDir.listFiles((dir, name) -> {
+            String ln = name.toLowerCase();
+            return ln.endsWith(".png") || ln.endsWith(".jpg") || ln.endsWith(".jpeg") || ln.endsWith(".gif");
+          });
+          if (imgs != null && imgs.length > 0) {
+            java.util.Random rnd = new java.util.Random();
+            File pick = imgs[rnd.nextInt(imgs.length)];
+            try {
+              Image img = ImageIO.read(pick);
+              if (img != null) {
+                contentPane.setBackgroundImage(new ImageIcon(img));
+              } else {
+                contentPane.setBackgroundImage(new ImageIcon(pick.getPath()));
+              }
+            } catch (java.io.IOException ioe) {
+              contentPane.setBackgroundImage(new ImageIcon(pick.getPath()));
+            }
+            return;
+          }
+        }
+      }
+    } catch (Exception ex) {
+      // fallback to default behavior
+      ex.printStackTrace();
+    }
+
     (new BackgroundImageWorker(backgroundImage, contentPane)).execute();
   }
 
