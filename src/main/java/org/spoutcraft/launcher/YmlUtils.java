@@ -45,12 +45,47 @@ public class YmlUtils {
         }
         return false;
       } else if (isRelative) {
-        ymlUrl = MirrorUtils.getMirrorUrl(ymlUrl, fallbackUrl);
-        if (ymlUrl == null) {
-          if (GameUpdater.canPlayOffline()) {
-            Main.isOffline = true;
+        // Try mirrors directly with short timeouts to avoid slow HEAD checks in MirrorUtils
+        try {
+          java.util.Map<String, Integer> mirrors = MirrorUtils.getMirrors();
+          String candidateUrl = null;
+          for (String host : mirrors.keySet()) {
+            String tryUrl = "https://" + host + "/" + ymlUrl;
+            try {
+              URL testUrl = new URL(tryUrl);
+              URLConnection testCon = testUrl.openConnection();
+              testCon.setConnectTimeout(1500);
+              testCon.setReadTimeout(2500);
+              // attempt to read a single byte to verify responsiveness
+              try (InputStream is = new BufferedInputStream(testCon.getInputStream())) {
+                if (is.read() >= 0) {
+                  candidateUrl = tryUrl;
+                  break;
+                }
+              }
+            } catch (Exception e) {
+              // try next mirror
+            }
           }
-          return false;
+          if (candidateUrl == null) {
+            ymlUrl = MirrorUtils.getMirrorUrl(ymlUrl, fallbackUrl);
+            if (ymlUrl == null) {
+              if (GameUpdater.canPlayOffline()) {
+                Main.isOffline = true;
+              }
+              return false;
+            }
+          } else {
+            ymlUrl = candidateUrl;
+          }
+        } catch (Exception e) {
+          ymlUrl = MirrorUtils.getMirrorUrl(ymlUrl, fallbackUrl);
+          if (ymlUrl == null) {
+            if (GameUpdater.canPlayOffline()) {
+              Main.isOffline = true;
+            }
+            return false;
+          }
         }
       }
 

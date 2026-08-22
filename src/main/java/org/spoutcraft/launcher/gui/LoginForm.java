@@ -253,7 +253,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     // editorPane.setMargin(new Insets(0,0,0,0));
     editorPane.setFocusable(false);
 
-    JLabel trans2;
+
 
     JScrollPane scrollPane = new JScrollPane(editorPane);
     scrollPane.setBounds(473, 11, 372, 340);
@@ -263,10 +263,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     scrollPane.getViewport().setBorder(null);
 
     editorPane.setCaretPosition(0);
-    trans2 = new JLabel();
-    trans2.setBackground(new Color(229, 246, 255, 100));
-    trans2.setOpaque(true);
-    trans2.setBounds(473, 11, 372, 340);
+
 
     JLabel login = new JLabel();
     login.setBackground(new Color(255, 255, 255, 120));
@@ -326,7 +323,6 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     contentPane.add(offlinePane);
 
     contentPane.add(scrollPane);
-    contentPane.add(trans2);
     contentPane.add(login);
     contentPane.add(trans);
     contentPane.add(progressBar);

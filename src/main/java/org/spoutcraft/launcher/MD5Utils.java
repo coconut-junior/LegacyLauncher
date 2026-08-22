@@ -1,9 +1,16 @@
 package org.spoutcraft.launcher;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -20,13 +27,30 @@ public class MD5Utils {
 
   // In-memory cache for MD5 hashes: key is file path + lastModified + length
   private static final Map<String, String> md5FileCache = new HashMap<>();
+  private static final File MD5_CACHE_FILE = new File(GameUpdater.cacheDir, "md5cache.ser");
+  private static final Object cacheLock = new Object();
+
+  static {
+    // Ensure cache directory exists
+    try {
+      GameUpdater.cacheDir.mkdirs();
+    } catch (Exception ignored) {
+    }
+    // Load persisted md5 cache if present
+    loadMd5Cache();
+    // Save cache on JVM shutdown
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> saveMd5Cache()));
+  }
 
   public static String getMD5(File file) {
     if (file == null || !file.exists()) {
       return null;
     }
     String cacheKey = file.getAbsolutePath() + ":" + file.lastModified() + ":" + file.length();
-    String cached = md5FileCache.get(cacheKey);
+    String cached;
+    synchronized (cacheLock) {
+      cached = md5FileCache.get(cacheKey);
+    }
     if (cached != null) {
       return cached;
     }
@@ -35,7 +59,11 @@ public class MD5Utils {
       stream = new FileInputStream(file);
       String md5Hex = DigestUtils.md5Hex(stream);
       stream.close();
-      md5FileCache.put(cacheKey, md5Hex);
+      synchronized (cacheLock) {
+        md5FileCache.put(cacheKey, md5Hex);
+      }
+      // Persist asynchronously to avoid blocking
+      saveMd5CacheAsync();
       return md5Hex;
     } catch (FileNotFoundException e) {
       e.printStackTrace();
@@ -51,6 +79,48 @@ public class MD5Utils {
       }
     }
     return null;
+  }
+
+  private static void loadMd5Cache() {
+    if (!MD5_CACHE_FILE.exists()) {
+      return;
+    }
+    synchronized (cacheLock) {
+      try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(MD5_CACHE_FILE))) {
+        Object obj = ois.readObject();
+        if (obj instanceof Map) {
+          @SuppressWarnings("unchecked")
+          Map<String, String> map = (Map<String, String>) obj;
+          md5FileCache.clear();
+          md5FileCache.putAll(map);
+        }
+      } catch (Exception e) {
+        // Corrupt cache - ignore
+        try {
+          MD5_CACHE_FILE.delete();
+        } catch (Exception ignored) {
+        }
+      }
+    }
+  }
+
+  private static void saveMd5CacheAsync() {
+    new Thread(() -> saveMd5Cache(), "MD5Cache-Saver").start();
+  }
+
+  private static void saveMd5Cache() {
+    synchronized (cacheLock) {
+      try {
+        File tmp = new File(MD5_CACHE_FILE.getParentFile(), MD5_CACHE_FILE.getName() + ".tmp");
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(tmp))) {
+          oos.writeObject(md5FileCache);
+        }
+        GameUpdater.copy(tmp, MD5_CACHE_FILE);
+        tmp.delete();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
   }
 
   public static String getMD5(FileType type) {
@@ -86,9 +156,9 @@ public class MD5Utils {
     if (!updated && !Main.isOffline) {
       updated = true;
       try {
-        String url = MirrorUtils.getMirrorUrl(CHECKSUM_MD5, null);
+        String urlStr = MirrorUtils.getMirrorUrl(CHECKSUM_MD5, null);
 
-        if (url == null) {
+        if (urlStr == null) {
           if (GameUpdater.canPlayOffline()) {
             Main.isOffline = true;
             parseChecksumFile();
@@ -96,8 +166,51 @@ public class MD5Utils {
           return;
         }
 
-        if (DownloadUtils.downloadFile(url, CHECKSUM_FILE.getPath()).isSuccess()) {
-          parseChecksumFile();
+        // Try conditional GET using If-Modified-Since to avoid re-downloading unchanged checksum file
+        URL url = new URL(urlStr);
+        try {
+          HttpURLConnection http = (HttpURLConnection) url.openConnection();
+          if (CHECKSUM_FILE.exists()) {
+            http.setIfModifiedSince(CHECKSUM_FILE.lastModified());
+          }
+          http.setRequestProperty("User-Agent", "Technic-Launcher/1.0");
+          http.setConnectTimeout(5000);
+          http.setReadTimeout(10000);
+          http.connect();
+          int code = http.getResponseCode();
+          if (code == HttpURLConnection.HTTP_NOT_MODIFIED) {
+            // No change; parse existing file
+            parseChecksumFile();
+          } else if (code == HttpURLConnection.HTTP_OK) {
+            // Download new file to temp then move into place
+            InputStream in = new BufferedInputStream(http.getInputStream());
+            File tmp = File.createTempFile("checksum", null, GameUpdater.tempDir);
+            try (FileOutputStream fos = new FileOutputStream(tmp)) {
+              byte[] buf = new byte[8192];
+              int r;
+              while ((r = in.read(buf)) != -1) {
+                fos.write(buf, 0, r);
+              }
+            } finally {
+              try {
+                in.close();
+              } catch (IOException ignored) {
+              }
+            }
+            GameUpdater.copy(tmp, CHECKSUM_FILE);
+            tmp.delete();
+            parseChecksumFile();
+          } else {
+            // Fallback to existing behavior
+            if (DownloadUtils.downloadFile(urlStr, CHECKSUM_FILE.getPath()).isSuccess()) {
+              parseChecksumFile();
+            }
+          }
+        } catch (ClassCastException e) {
+          // Non-HTTP URL, fallback to DownloadUtils
+          if (DownloadUtils.downloadFile(urlStr, CHECKSUM_FILE.getPath()).isSuccess()) {
+            parseChecksumFile();
+          }
         }
       } catch (FileNotFoundException e) {
         Util.log("Checksum file '%s' not found.", CHECKSUM_FILE.getAbsoluteFile());
