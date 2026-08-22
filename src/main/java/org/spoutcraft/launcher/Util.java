@@ -157,6 +157,14 @@ public class Util {
     return directory.delete();
   }
 
+  static boolean isTekkitResourceDir(File resourcesDir) {
+    if (resourcesDir == null) {
+      return false;
+    }
+    String normalizedPath = resourcesDir.getPath().replace('\\', '/');
+    return normalizedPath.contains("tekkit/resources");
+  }
+
   public static File getResourceFile(String filename) {
     return getResourceFile(filename, GameUpdater.modpackDir, ModPackListYML.currentModPackDirectory);
   }
@@ -176,21 +184,25 @@ public class Util {
     resourcesDir = new File(defaultPath, RESOURCES_PATH);
 
     //tekkit logo does not download, so we need to copy it from resources
-    if(resourcesDir.getPath().contains("tekkit/resources")) {
+    if (isTekkitResourceDir(resourcesDir)) {
       URL url = Main.class.getResource("/org/spoutcraft/launcher/tekkit/logo.png");
-      File tekkitLogo = new File(resourcesDir.getPath(), "logo.png");
-      
-      try (InputStream is = url.openStream();
-           OutputStream os = new java.io.FileOutputStream(tekkitLogo)) {
-        byte[] buffer = new byte[1024];
-        int length;
-        while ((length = is.read(buffer)) > 0) {
-          os.write(buffer, 0, length);
+      File tekkitLogo = new File(resourcesDir, "logo.png");
+      if (url != null) {
+        resourcesDir.mkdirs();
+        try (InputStream is = url.openStream();
+             OutputStream os = new java.io.FileOutputStream(tekkitLogo)) {
+          byte[] buffer = new byte[1024];
+          int length;
+          while ((length = is.read(buffer)) > 0) {
+            os.write(buffer, 0, length);
+          }
+          System.out.println("Successfully wrote tekkit logo to: " + tekkitLogo.getAbsolutePath());
+        } catch (IOException e) {
+          System.err.println("Failed to write tekkit logo: " + e.getMessage());
+          e.printStackTrace();
         }
-        System.out.println("Successfully wrote tekkit logo to: " + tekkitLogo.getAbsolutePath());
-      } catch (IOException e) {
-        System.err.println("Failed to write tekkit logo: " + e.getMessage());
-        e.printStackTrace();
+      } else {
+        System.err.println("Missing Tekkit logo resource: /org/spoutcraft/launcher/tekkit/logo.png");
       }
     }
 
