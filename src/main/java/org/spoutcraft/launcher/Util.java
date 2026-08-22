@@ -109,13 +109,24 @@ public class Util {
 
   public static String getBuild() {
     List<String> lines = readTextFromJar("/META-INF/maven/org.spoutcraft/technic-launcher/pom.properties");
-    if (lines == null || lines.isEmpty()) return Main.build;
-    for (String line : lines) {
-      if (line.contains("version")) {
-        return line.replace("version=", "");
+    if (lines != null && !lines.isEmpty()) {
+      for (String line : lines) {
+        if (line.contains("version")) {
+          return line.replace("version=", "");
+        }
       }
     }
-    return Main.build;
+
+    Package launcherPackage = Main.class.getPackage();
+    if (launcherPackage != null && launcherPackage.getImplementationVersion() != null) {
+      return launcherPackage.getImplementationVersion();
+    }
+
+    if (Main.build != null && !Main.build.trim().isEmpty()) {
+      return Main.build;
+    }
+
+    return "dev";
   }
 
   public static boolean removeDirectory(File directory) {
