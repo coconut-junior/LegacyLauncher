@@ -123,6 +123,37 @@ public class Main {
 
     LoadingScreen ls = new LoadingScreen();
     ls.setVisible(true);
+    // Install a minimal crash logger to capture uncaught exceptions to disk
+    // Avoid loading Swing or other optional classes inside the handler.
+    Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+      try {
+        File logFile = new File(PlatformUtils.getWorkingDirectory(), "launcher-crash.log");
+        if (logFile.getParentFile() != null) logFile.getParentFile().mkdirs();
+        try (java.io.FileWriter fw = new java.io.FileWriter(logFile, true)) {
+          fw.write("==== Crash: " + new java.util.Date() + " ===\n");
+          java.io.StringWriter sw = new java.io.StringWriter();
+          throwable.printStackTrace(new java.io.PrintWriter(sw));
+          fw.write(sw.toString());
+          fw.write("\n\n");
+        }
+      } catch (Throwable ignored) {
+        // Best-effort only
+      }
+      // Print to stderr so the user can see it in console
+      try {
+        throwable.printStackTrace(System.err);
+      } catch (Throwable ignored) {
+      }
+      try {
+        System.err.println("Launcher crashed. See: " + new File(PlatformUtils.getWorkingDirectory(), "launcher-crash.log").getAbsolutePath());
+      } catch (Throwable ignored) {
+      }
+      // Exit with non-zero status
+      try {
+        System.exit(1);
+      } catch (Throwable ignored) {
+      }
+    });
     build = Util.getBuild();
     Options options = new Options();
     try {

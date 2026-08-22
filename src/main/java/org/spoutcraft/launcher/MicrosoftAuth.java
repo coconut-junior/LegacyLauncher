@@ -25,6 +25,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.io.*;
 import com.microsoft.aad.msal4j.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -45,6 +51,12 @@ public class MicrosoftAuth {
   }
 
   public static AuthResponse doLogin(JProgressBar progress) throws IOException, MCNetworkException {
+    // Try cached Minecraft auth first
+    AuthResponse cached = tryLoadCachedAuth();
+    if (cached != null) {
+      return cached;
+    }
+
     final String clientId = "8dfabc1d-38a9-42d8-bc08-677dbc60fe65";
     final String authority = "https://login.microsoftonline.com/consumers/";
     final String scope = "XboxLive.signin offline_access";
@@ -144,8 +156,85 @@ public class MicrosoftAuth {
         throw new MCNetworkException("Failed to set AuthResponse fields: " + e.getMessage());
     }
 
+    // Persist cached auth token with expiry if provided
+    try {
+      long expiresAt = System.currentTimeMillis() + 3600L * 1000; // default 1 hour
+      if (mcAuthResponse.has("expires_in")) {
+        try {
+          int expiresIn = mcAuthResponse.get("expires_in").getAsInt();
+          expiresAt = System.currentTimeMillis() + (expiresIn * 1000L) - 60000L; // 1 minute grace
+        } catch (Exception ignored) {
+        }
+      }
+      saveCachedAuth(mcAccessToken, expiresAt, uuid, name);
+    } catch (Exception ignored) {
+    }
+
     return authResponse;
 }
+
+  private static final Path AUTH_CACHE = new File(GameUpdater.cacheDir, "microsoft_auth.json").toPath();
+
+  private static void saveCachedAuth(String accessToken, long expiresAt, String uuid, String name) {
+    try {
+      GameUpdater.cacheDir.mkdirs();
+      Gson gson = new Gson();
+      JsonObject obj = new JsonObject();
+      obj.addProperty("access_token", accessToken);
+      obj.addProperty("expires_at", expiresAt);
+      obj.addProperty("uuid", uuid);
+      obj.addProperty("name", name);
+      String json = gson.toJson(obj);
+      Files.write(AUTH_CACHE, json.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  private static AuthResponse tryLoadCachedAuth() {
+    try {
+      if (!Files.exists(AUTH_CACHE)) return null;
+      String json = new String(Files.readAllBytes(AUTH_CACHE), StandardCharsets.UTF_8);
+      JsonObject obj = new JsonParser().parse(json).getAsJsonObject();
+      String token = obj.get("access_token").getAsString();
+      long expiresAt = obj.get("expires_at").getAsLong();
+      String uuid = obj.get("uuid").getAsString();
+      String name = obj.get("name").getAsString();
+      if (System.currentTimeMillis() >= expiresAt) {
+        try { Files.delete(AUTH_CACHE); } catch (Exception ignored) {}
+        return null;
+      }
+      // Verify token still valid by fetching profile
+      try {
+        JsonObject profile = getJson("https://api.minecraftservices.com/minecraft/profile", token);
+        // build AuthResponse
+        Profile p = new Profile(uuid, name);
+        AuthResponse authResponse = new AuthResponse();
+        try {
+            java.lang.reflect.Field accessTokenField = AuthResponse.class.getDeclaredField("accessToken");
+            accessTokenField.setAccessible(true);
+            accessTokenField.set(authResponse, token);
+
+            java.lang.reflect.Field selectedProfileField = AuthResponse.class.getDeclaredField("selectedProfile");
+            selectedProfileField.setAccessible(true);
+            selectedProfileField.set(authResponse, p);
+
+            java.lang.reflect.Field availableProfilesField = AuthResponse.class.getDeclaredField("availableProfiles");
+            availableProfilesField.setAccessible(true);
+            availableProfilesField.set(authResponse, new Profile[]{p});
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        return authResponse;
+      } catch (Exception e) {
+        try { Files.delete(AUTH_CACHE); } catch (Exception ignored) {}
+        return null;
+      }
+    } catch (Exception e) {
+      return null;
+    }
+  }
 
 // Helper: POST JSON and parse response
 private static JsonObject postJson(String url, String json) throws IOException, MCNetworkException {

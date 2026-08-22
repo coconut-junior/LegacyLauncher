@@ -85,6 +85,9 @@ public class Util {
 
     try {
       is = Main.class.getResourceAsStream(s);
+      if (is == null) {
+        return list;
+      }
       br = new BufferedReader(new InputStreamReader(is));
       while (null != (line = br.readLine())) {
         list.add(line);
@@ -105,11 +108,8 @@ public class Util {
   }
 
   public static String getBuild() {
-    List<String> lines = null;
-    try {
-      lines = readTextFromJar("/META-INF/maven/org.spoutcraft/technic-launcher/pom.properties");
-    } catch (NullPointerException e) {
-    }
+    List<String> lines = readTextFromJar("/META-INF/maven/org.spoutcraft/technic-launcher/pom.properties");
+    if (lines == null || lines.isEmpty()) return Main.build;
     for (String line : lines) {
       if (line.contains("version")) {
         return line.replace("version=", "");

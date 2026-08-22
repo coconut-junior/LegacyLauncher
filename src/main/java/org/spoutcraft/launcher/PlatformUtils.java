@@ -50,7 +50,14 @@ public class PlatformUtils {
   }
 
   public static File getWorkingDirectory(String applicationName) {
-    boolean isPortable = MicrosoftAuth.getOptions().isPortable();
+    boolean isPortable = false;
+    try {
+      Options opt = MicrosoftAuth.getOptions();
+      if (opt != null) {
+        isPortable = opt.isPortable();
+      }
+    } catch (Throwable ignored) {
+    }
     if (isPortable) {
       return new File("." + LAUNCHER_DIR);
     }
