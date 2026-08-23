@@ -15,6 +15,8 @@ public class ComboBoxRenderer extends JLabel implements ListCellRenderer {
 
   public ComboBoxRenderer() {
     setOpaque(true);
+    setBackground(new java.awt.Color(255, 255, 255, 180));
+    setForeground(java.awt.Color.DARK_GRAY);
     setHorizontalAlignment(CENTER);
     setVerticalAlignment(CENTER);
   }
@@ -30,11 +32,11 @@ public class ComboBoxRenderer extends JLabel implements ListCellRenderer {
     String selectedItem = (String) value;
 
     if (isSelected) {
-      setBackground(list.getSelectionBackground());
-      setForeground(list.getSelectionForeground());
+      setBackground(new java.awt.Color(214, 229, 255, 210));
+      setForeground(java.awt.Color.BLACK);
     } else {
-      setBackground(list.getBackground());
-      setForeground(list.getForeground());
+      setBackground(new java.awt.Color(255, 255, 255, 180));
+      setForeground(java.awt.Color.DARK_GRAY);
     }
 
     // Set the icon and text. If icon was null, say so.

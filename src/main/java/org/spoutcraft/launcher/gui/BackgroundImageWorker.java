@@ -1,7 +1,9 @@
 package org.spoutcraft.launcher.gui;
 
+import java.awt.Image;
 import java.io.File;
 
+import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.SwingWorker;
 
@@ -33,6 +35,23 @@ public class BackgroundImageWorker extends SwingWorker<Object, Object> {
 
   @Override
   protected void done() {
-    background.setBackgroundImage(new ImageIcon(backgroundImage.getPath()));
+    try {
+      if (backgroundImage != null && backgroundImage.exists()) {
+        Image image = ImageIO.read(backgroundImage);
+        if (image != null) {
+          background.setBackgroundImage(new ImageIcon(image));
+          return;
+        }
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    ImageIcon fallback = new ImageIcon(getClass().getResource("/org/spoutcraft/launcher/splash.gif"));
+    if (fallback.getImageLoadStatus() == java.awt.MediaTracker.COMPLETE) {
+      background.setBackgroundImage(fallback);
+    } else {
+      background.setBackgroundImage(new ImageIcon(new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB)));
+    }
   }
 }

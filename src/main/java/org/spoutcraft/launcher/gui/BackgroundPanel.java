@@ -11,9 +11,14 @@ class BackgroundPanel extends JPanel {
   private ImageIcon         backgroundImageIcon = null;
   private Image             backgroundImage     = null;
 
+  public BackgroundPanel() {
+    setOpaque(true);
+    setBackground(new java.awt.Color(32, 32, 32));
+  }
+
   public void setBackgroundImage(ImageIcon imageIcon) {
     backgroundImageIcon = imageIcon;
-    backgroundImage = backgroundImageIcon.getImage();
+    backgroundImage = (imageIcon != null) ? imageIcon.getImage() : null;
     revalidate();
     repaint();
   }
@@ -21,9 +26,11 @@ class BackgroundPanel extends JPanel {
   @Override
   protected void paintComponent(Graphics g) {
     super.paintComponent(g);
-    // Draw the background image scaled to fill the panel
     if (backgroundImage != null) {
       g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+    } else {
+      g.setColor(getBackground());
+      g.fillRect(0, 0, getWidth(), getHeight());
     }
   }
 }

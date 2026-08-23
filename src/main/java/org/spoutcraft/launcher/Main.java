@@ -121,8 +121,23 @@ public class Main {
       System.exit(1);
     }
 
-    LoadingScreen ls = new LoadingScreen();
-    ls.setVisible(true);
+    // Parse startup options first so splash behavior can be controlled by a flag.
+    Options options = new Options();
+    try {
+      new JCommander(options, args);
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+    if (options.isSkipSplash()) {
+      System.setProperty("launcher.skipSplash", "true");
+    }
+    MicrosoftAuth.setOptions(options);
+
+    LoadingScreen ls = null;
+    if (!options.isSkipSplash()) {
+      ls = new LoadingScreen();
+      ls.setVisible(true);
+    }
     // Install a minimal crash logger to capture uncaught exceptions to disk
     // Avoid loading Swing or other optional classes inside the handler.
     Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
@@ -155,13 +170,6 @@ public class Main {
       }
     });
     build = Util.getBuild();
-    Options options = new Options();
-    try {
-      new JCommander(options, args);
-    } catch (Exception ex) {
-      ex.printStackTrace();
-    }
-    MicrosoftAuth.setOptions(options);
     recursion = new File(PlatformUtils.getWorkingDirectory(), "rtemp");
 
     args_temp = args;
@@ -221,10 +229,13 @@ public class Main {
 
     JFrame.setDefaultLookAndFeelDecorated(true);
     SettingsUtil.setLatestLWJGL(false);
+
     loginForm = new LoginForm();
     loginForm.setLocationByPlatform(true);
     loginForm.setVisible(true);
-    ls.close();
+    if (ls != null) {
+      ls.close();
+    }
   }
 
   private static String getBuild() {

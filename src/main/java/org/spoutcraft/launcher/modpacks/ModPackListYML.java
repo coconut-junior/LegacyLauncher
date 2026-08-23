@@ -70,14 +70,26 @@ public class ModPackListYML {
 
   public static Configuration getConfig() {
     if (config == null) {
-      updateModPacksYMLCache();
+      if (!Boolean.getBoolean("launcher.skipSplash") || !MODPACKS_YML_FILE.exists()) {
+        updateModPacksYMLCache();
+      }
       config = new Configuration(MODPACKS_YML_FILE);
-      config.load();
+      try {
+        config.load();
+      } catch (Exception e) {
+        if (!Boolean.getBoolean("launcher.skipSplash")) {
+          throw e;
+        }
+      }
     }
     return config;
   }
 
   public static void updateModPacksYMLCache() {
+    if (Boolean.getBoolean("launcher.skipSplash") && MODPACKS_YML_FILE.exists()) {
+      updated = true;
+      return;
+    }
     if (!updated) {
       synchronized (key) {
         YmlUtils.downloadRelativeYmlFile(MODPACKS_YML);

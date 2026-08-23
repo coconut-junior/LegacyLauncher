@@ -162,7 +162,8 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     setBounds((dim.width - 860) / 2, (dim.height - 500) / 2, 860, 500);
 
     contentPane = new BackgroundPanel();
-
+    contentPane.setOpaque(true);
+    contentPane.setBackground(new Color(32, 32, 32));
     contentPane.setBorder(new EmptyBorder(0, 0, 0, 0));
     setContentPane(contentPane);
 
@@ -179,9 +180,12 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     String[] itemArray = new String[i];
     modpackList = new JComboBox(items.toArray(itemArray));
     modpackList.setBounds(10, 10, 328, 100);
+    modpackList.setOpaque(false);
+    modpackList.setBackground(new Color(255, 255, 255));
+    modpackList.setForeground(Color.DARK_GRAY);
     ComboBoxRenderer renderer = new ComboBoxRenderer();
     renderer.setPreferredSize(new Dimension(200, 110));
-    
+
     modpackList.setRenderer(renderer);
     modpackList.setMaximumRowCount(4);
     modpackList.setSelectedItem(SettingsUtil.getModPackSelection());
@@ -242,6 +246,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     progressBar.setVisible(false);
     progressBar.setStringPainted(true);
     progressBar.setOpaque(true);
+    progressBar.setBackground(new Color(235, 235, 235));
 
     JLabel purchaseAccount = new HyperlinkJLabel("<html><u>Need a minecraft account?</u></html>", "http://www.minecraft.net/register.jsp");
     purchaseAccount.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -270,9 +275,8 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     readUsedUsernames();
 
     editorPane.setEditable(false);
-    // Make tumbler feed background opaque so it doesn't show the launcher background
     editorPane.setOpaque(true);
-    editorPane.setBackground(new Color(255, 255, 255, 200));
+    editorPane.setBackground(new Color(255, 255, 255));
     // editorPane.setBorder(null);
     // editorPane.setMargin(new Insets(0,0,0,0));
     editorPane.setFocusable(false);
@@ -297,8 +301,8 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
 
     JLabel trans;
     trans = new JLabel();
-    trans.setBackground(new Color(229, 246, 255, 60));
-    trans.setOpaque(true);
+    trans.setBackground(new Color(0, 0, 0, 0));
+    trans.setOpaque(false);
     trans.setBounds(0, 0, 854, 480);
 
     usernameField.getEditor().addActionListener(this);
@@ -379,15 +383,16 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
   }
 
   public void loadLauncherData() {
-    MirrorUtils.updateMirrorsYMLCache();
-    MD5Utils.updateMD5Cache();
-    ModPackListYML.updateModPacksYMLCache();
+    if (!Boolean.getBoolean("launcher.skipSplash")) {
+      MirrorUtils.updateMirrorsYMLCache();
+      MD5Utils.updateMD5Cache();
+      ModPackListYML.updateModPacksYMLCache();
+      ModPackListYML.getAllModPackResources();
+      LibrariesYML.updateLibrariesYMLCache();
+      ModLibraryYML.updateModLibraryYML();
+    }
 
-    ModPackListYML.getAllModPackResources();
     ModPackListYML.loadModpackLogos();
-
-    LibrariesYML.updateLibrariesYMLCache();
-    ModLibraryYML.updateModLibraryYML();
 
     if (SettingsUtil.getModPackSelection() != null) {
       updateBranding();

@@ -35,6 +35,8 @@ public class Options {
   private boolean            portable   = false;
   @Parameter(names = { "-safe", "-smode", "-safe_mode", "-sm" }, description = "Safe Mode - Prevents Addons from being loaded")
   private boolean            safe_mode  = false;
+  @Parameter(names = { "-skip-splash", "--skip-splash", "-nosplash", "--nosplash", "-splash-off" }, description = "Skip the startup splash screen")
+  private boolean            skip_splash = false;
 
   public List<String> getParameters() {
     return parameters;
@@ -74,5 +76,9 @@ public class Options {
 
   public boolean isSafe_mode() {
     return safe_mode;
+  }
+
+  public boolean isSkipSplash() {
+    return skip_splash || Boolean.getBoolean("launcher.skipSplash");
   }
 }
