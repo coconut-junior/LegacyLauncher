@@ -115,17 +115,22 @@ public class MinecraftYML {
         if (getConfigFile().exists()) {
           try {
             current = getConfig().getString("current");
+            if (!isValidVersion(current)) {
+              current = null;
+            }
           } catch (Exception ex) {
             ex.printStackTrace();
           }
         }
 
         if (YmlUtils.downloadYmlFile(MINECRAFT_YML, "http://technic.freeworldsgaming.com/minecraft.yml", getConfigFile())) {
-          // GameUpdater.copy(getConfigFile(), output)
           config = null;
           Configuration config = getConfig();
           latest = config.getString("latest");
           recommended = config.getString("recommended");
+          if (current == null) {
+            current = recommended;
+          }
           if (current != null) {
             config.setProperty("current", current);
             config.save();

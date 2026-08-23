@@ -44,7 +44,15 @@ public class ModPackYML {
 
         Configuration config = new Configuration(getModPackYMLFile());
         config.load();
-        config.setProperty("current", selected);
+        if (!isValidBuild(selected)) {
+          selected = config.getString("recommended");
+        }
+        if (!isValidBuild(selected)) {
+          selected = config.getString("latest");
+        }
+        if (isValidBuild(selected)) {
+          config.setProperty("current", selected);
+        }
         config.setProperty("launcher", Main.build);
         config.save();
 

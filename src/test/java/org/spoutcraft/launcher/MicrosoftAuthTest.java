@@ -3,6 +3,9 @@ package org.spoutcraft.launcher;
 import org.junit.Test;
 import org.spoutcraft.launcher.modpacks.ModPackYML;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Date;
 
 import static org.junit.Assert.assertFalse;
@@ -54,5 +57,16 @@ public class MicrosoftAuthTest {
         assertFalse(MinecraftYML.isValidVersion("   "));
         assertFalse(MinecraftYML.isValidVersion("-1"));
         assertTrue(MinecraftYML.isValidVersion("1.2.5"));
+    }
+
+    @Test
+    public void cachedFileWithoutChecksumMetadataIsAccepted() throws IOException {
+        File temp = File.createTempFile("md5-cache-test", ".zip");
+        try (FileWriter writer = new FileWriter(temp)) {
+            writer.write("cached archive");
+        }
+
+        assertTrue(MD5Utils.checksumPath(temp, "mods\\missing\\archive.zip"));
+        temp.delete();
     }
 }

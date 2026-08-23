@@ -264,9 +264,10 @@ public class MD5Utils {
     String fileMD5 = getMD5(file);
     String storedMD5 = getMD5FromList(md5Path);
     if (storedMD5 == null) {
-      Util.log("MD5 hash not found for '%s'", md5Path);
+      Util.log("MD5 hash not found for '%s'; accepting cached file without checksum metadata.", md5Path);
+      return true;
     }
-    boolean doesMD5Match = (storedMD5 == null) ? false : storedMD5.equalsIgnoreCase(fileMD5);
+    boolean doesMD5Match = storedMD5.equalsIgnoreCase(fileMD5);
     if (!doesMD5Match) {
       Util.log("[MD5 Mismatch] File '%s' has md5 of '%s' instead of '%s'", file, fileMD5, storedMD5);
     }
