@@ -60,7 +60,7 @@ public class ModPackYML {
         Configuration config = new Configuration(getModPackYMLFile());
         config.load();
         selected = config.getString("current");
-        if (selected == null || !isValidBuild(selected)) {
+        if (!isValidBuild(selected)) {
           selected = config.getString("recommended");
         }
       } catch (Exception ex) {
@@ -70,8 +70,8 @@ public class ModPackYML {
     return selected;
   }
 
-  private static boolean isValidBuild(String selected) {
-    return !selected.equals("-1");
+  public static boolean isValidBuild(String selected) {
+    return selected != null && !selected.trim().isEmpty() && !"-1".equals(selected.trim());
   }
 
   public static List<Map<String, String>> getModList() {

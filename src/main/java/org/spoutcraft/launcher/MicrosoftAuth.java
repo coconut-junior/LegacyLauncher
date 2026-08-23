@@ -32,6 +32,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Collections;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -76,18 +79,24 @@ public class MicrosoftAuth {
     InteractiveRequestParameters parameters = InteractiveRequestParameters
         .builder(redirectUri)
         .scopes(Collections.singleton(scope))
+        .prompt(Prompt.SELECT_ACCOUNT)
         .build();
 
     IAuthenticationResult result;
     try {
-        result = pca.acquireToken(parameters).get();
+        result = pca.acquireToken(parameters).get(90, TimeUnit.SECONDS);
+      } catch (TimeoutException e) {
+        System.out.println("Microsoft authentication timed out; forcing a fresh sign-in attempt");
+        throw new MCNetworkException("Microsoft sign-in timed out. Please try again.");
       } catch (Exception e) {
       System.out.println("auth failed");
         throw new MCNetworkException("Microsoft authentication failed: " + e.getMessage());
     }
 
-    if (result == null || result.accessToken() == null) {
-        throw new MCNetworkException("Failed to acquire Microsoft access token");
+    if (result == null || result.accessToken() == null || isTokenExpired(result.expiresOnDate())) {
+        System.out.println("Cached Microsoft access token expired or missing; forcing interactive sign-in");
+        try { Files.deleteIfExists(AUTH_CACHE); } catch (Exception ignored) {}
+        throw new MCNetworkException("Cached Microsoft access token expired. Please sign in again.");
     }
     String msAccessToken = result.accessToken();
 
@@ -175,6 +184,18 @@ public class MicrosoftAuth {
 
   private static final Path AUTH_CACHE = new File(GameUpdater.cacheDir, "microsoft_auth.json").toPath();
 
+  static boolean isTokenExpired(Date expiresOn) {
+    return expiresOn == null || expiresOn.getTime() <= 0 || expiresOn.before(new Date());
+  }
+
+  static boolean isMinecraftTokenExpired(long expiresAt) {
+    return expiresAt <= 0 || System.currentTimeMillis() >= expiresAt;
+  }
+
+  static boolean isTokenExpired(long expiresAt) {
+    return isMinecraftTokenExpired(expiresAt);
+  }
+
   private static void saveCachedAuth(String accessToken, long expiresAt, String uuid, String name) {
     try {
       GameUpdater.cacheDir.mkdirs();
@@ -196,11 +217,12 @@ public class MicrosoftAuth {
       if (!Files.exists(AUTH_CACHE)) return null;
       String json = new String(Files.readAllBytes(AUTH_CACHE), StandardCharsets.UTF_8);
       JsonObject obj = new JsonParser().parse(json).getAsJsonObject();
+      // This cache stores the final Minecraft access token, not the Microsoft identity token.
       String token = obj.get("access_token").getAsString();
       long expiresAt = obj.get("expires_at").getAsLong();
       String uuid = obj.get("uuid").getAsString();
       String name = obj.get("name").getAsString();
-      if (System.currentTimeMillis() >= expiresAt) {
+      if (isMinecraftTokenExpired(expiresAt)) {
         try { Files.delete(AUTH_CACHE); } catch (Exception ignored) {}
         return null;
       }

@@ -87,7 +87,11 @@ public class ModpackBuild {
 
   public String getInstalledBuild() {
     Configuration config = ModPackYML.getModPackYML();
-    return config.getString("current");
+    String current = config.getString("current");
+    if (!ModPackYML.isValidBuild(current)) {
+      current = config.getString("recommended");
+    }
+    return current;
   }
 
   public String getPatchURL() {

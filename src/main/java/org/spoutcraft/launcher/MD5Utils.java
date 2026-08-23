@@ -153,9 +153,15 @@ public class MD5Utils {
   }
 
   public static void updateMD5Cache() {
+    if (CHECKSUM_FILE.exists()) {
+      System.out.println("[Startup] CHECKSUM.md5 already cached at " + CHECKSUM_FILE.getAbsolutePath());
+      updated = true;
+      return;
+    }
     if (!updated && !Main.isOffline) {
       updated = true;
       try {
+        System.out.println("[Startup] Fetching CHECKSUM.md5 from mirror");
         String urlStr = MirrorUtils.getMirrorUrl(CHECKSUM_MD5, null);
 
         if (urlStr == null) {

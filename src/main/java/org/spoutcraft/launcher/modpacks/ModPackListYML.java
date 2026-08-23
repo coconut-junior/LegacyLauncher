@@ -3,6 +3,10 @@ package org.spoutcraft.launcher.modpacks;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -68,10 +72,17 @@ public class ModPackListYML {
     return ICON_PNG;
   }
 
+  public static boolean hasBundledModpacksYml() {
+    return ModPackListYML.class.getResourceAsStream("/org/spoutcraft/launcher/modpacks.yml") != null
+        || ModPackListYML.class.getResourceAsStream("/modpacks.yml") != null;
+  }
+
   public static Configuration getConfig() {
     if (config == null) {
       if (!Boolean.getBoolean("launcher.skipSplash") || !MODPACKS_YML_FILE.exists()) {
-        updateModPacksYMLCache();
+        if (!copyBundledModpacksYmlIfPresent()) {
+          updateModPacksYMLCache();
+        }
       }
       config = new Configuration(MODPACKS_YML_FILE);
       try {
@@ -85,6 +96,43 @@ public class ModPackListYML {
     return config;
   }
 
+  private static boolean copyBundledModpacksYmlIfPresent() {
+    if (MODPACKS_YML_FILE.exists()) {
+      return true;
+    }
+
+    InputStream bundledStream = ModPackListYML.class.getResourceAsStream("/org/spoutcraft/launcher/modpacks.yml");
+    if (bundledStream == null) {
+      bundledStream = ModPackListYML.class.getResourceAsStream("/modpacks.yml");
+    }
+    if (bundledStream == null) {
+      return false;
+    }
+
+    try {
+      File parentDir = MODPACKS_YML_FILE.getParentFile();
+      if (parentDir != null) {
+        parentDir.mkdirs();
+      }
+      try (OutputStream outputStream = new FileOutputStream(MODPACKS_YML_FILE)) {
+        byte[] buffer = new byte[4096];
+        int bytesRead;
+        while ((bytesRead = bundledStream.read(buffer)) != -1) {
+          outputStream.write(buffer, 0, bytesRead);
+        }
+      }
+      return true;
+    } catch (IOException e) {
+      e.printStackTrace();
+      return false;
+    } finally {
+      try {
+        bundledStream.close();
+      } catch (IOException ignored) {
+      }
+    }
+  }
+
   public static void updateModPacksYMLCache() {
     if (Boolean.getBoolean("launcher.skipSplash") && MODPACKS_YML_FILE.exists()) {
       updated = true;
@@ -92,6 +140,10 @@ public class ModPackListYML {
     }
     if (!updated) {
       synchronized (key) {
+        if (copyBundledModpacksYmlIfPresent()) {
+          updated = true;
+          return;
+        }
         YmlUtils.downloadRelativeYmlFile(MODPACKS_YML);
         updated = true;
       }
@@ -178,15 +230,22 @@ public class ModPackListYML {
     for (String resource : RESOURCES) {
       String relativeFilePath = name + "/resources/" + resource;
 
+      File dir = new File(path, RESOURCES_PATH);
+      dir.mkdirs();
+      File file = new File(dir, resource);
+      if (file.exists()) {
+        continue;
+      }
+
+      if (Util.copyBundledResource(new File(GameUpdater.workDir, name), resource) != null) {
+        continue;
+      }
+
       if (doCheck && MD5Utils.checksumPath(relativeFilePath)) {
         continue;
       }
 
-      File dir = new File(path, RESOURCES_PATH);
-      dir.mkdirs();
-      File file = new File(dir, resource);
       String filePath = file.getAbsolutePath();
-
       String fileURL = MirrorUtils.getMirrorUrl(relativeFilePath, null);
       if (fileURL == null) {
         continue;

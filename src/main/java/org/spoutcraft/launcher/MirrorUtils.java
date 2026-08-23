@@ -20,6 +20,7 @@ public class MirrorUtils {
   public static final String[] MIRRORS_URL = { "https://mirror.technicpack.net/Technic/mirrors.yml" };
   public static File           mirrorsYML  = new File(GameUpdater.workDir, "mirrors.yml");
   private static boolean       updated     = false;
+  private static boolean       mirrorsLogged = false;
   private static final Random  rand        = new Random();
 
   public static String getMirrorUrl(String mirrorURI, String fallbackUrl, DownloadListener listener) {
@@ -126,13 +127,34 @@ public class MirrorUtils {
   }
 
   public static void updateMirrorsYMLCache() {
-    if (updated) {
-      return;
-    }
-    updated = true;
-    for (String urlentry : MIRRORS_URL) {
-      if (YmlUtils.downloadMirrorsYmlFile(urlentry)) {
+    synchronized (MirrorUtils.class) {
+      if (updated || mirrorsYML.exists()) {
+        if (mirrorsYML.exists() && !mirrorsLogged) {
+          System.out.println("[Startup] mirrors.yml already cached at " + mirrorsYML.getAbsolutePath());
+          mirrorsLogged = true;
+        }
+        updated = true;
         return;
+      }
+      if (!mirrorsLogged) {
+        System.out.println("[Startup] No mirrors cache found; fetching mirrors.yml");
+      }
+      updated = true;
+      for (String urlentry : MIRRORS_URL) {
+        if (!mirrorsLogged) {
+          System.out.println("[Startup] Trying mirror source: " + urlentry);
+        }
+        if (YmlUtils.downloadMirrorsYmlFile(urlentry)) {
+          if (!mirrorsLogged) {
+            System.out.println("[Startup] mirrors.yml downloaded successfully from " + urlentry);
+            mirrorsLogged = true;
+          }
+          return;
+        }
+      }
+      if (!mirrorsLogged) {
+        System.out.println("[Startup] Could not fetch mirrors.yml; continuing with bundled/offline fallback");
+        mirrorsLogged = true;
       }
     }
   }

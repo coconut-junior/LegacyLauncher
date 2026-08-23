@@ -207,6 +207,53 @@ public class Util {
     }
 
     overrideIcon = new File(resourcesDir, filename);
+    if (overrideIcon.exists()) {
+      return overrideIcon;
+    }
+
+    File bundledResource = copyBundledResource(defaultPath, filename);
+    if (bundledResource != null) {
+      return bundledResource;
+    }
+
     return overrideIcon;
+  }
+
+  public static File copyBundledResource(File modpackDir, String filename) {
+    if (modpackDir == null || modpackDir.getName() == null || modpackDir.getName().trim().isEmpty()) {
+      return null;
+    }
+
+    String modpackName = modpackDir.getName();
+    String[] candidates = new String[] {
+        "/org/spoutcraft/launcher/" + modpackName + "/resources/" + filename,
+        "/org/spoutcraft/launcher/" + modpackName + "/" + filename,
+        "/org/spoutcraft/launcher/modpacks/" + modpackName + "/resources/" + filename,
+        "/modpacks/" + modpackName + "/resources/" + filename,
+        "/org/spoutcraft/launcher/resources/" + modpackName + "/" + filename
+    };
+
+    for (String candidate : candidates) {
+      try (InputStream input = Main.class.getResourceAsStream(candidate)) {
+        if (input == null) {
+          continue;
+        }
+        File targetDir = new File(modpackDir, RESOURCES_PATH);
+        targetDir.mkdirs();
+        File targetFile = new File(targetDir, filename);
+        try (OutputStream output = new FileOutputStream(targetFile)) {
+          byte[] buffer = new byte[4096];
+          int read;
+          while ((read = input.read(buffer)) != -1) {
+            output.write(buffer, 0, read);
+          }
+        }
+        return targetFile;
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    return null;
   }
 }

@@ -53,9 +53,17 @@ public class MinecraftYML {
     config.save();
   }
 
+  public static boolean isValidVersion(String version) {
+    return version != null && !version.trim().isEmpty() && !"-1".equals(version.trim());
+  }
+
   public static String getInstalledVersion() {
     Configuration config = getMinecraftYML();
-    return config.getString("current");
+    String current = config.getString("current");
+    if (!isValidVersion(current)) {
+      current = config.getString("recommended");
+    }
+    return current == null ? "" : current;
   }
 
   public static Set<String> getMinecraftVersions() {

@@ -21,12 +21,21 @@ public class YmlUtils {
   }
 
   public static boolean downloadRelativeYmlFile(String relativePath) {
-    return downloadYmlFile(relativePath, null, new File(GameUpdater.workDir, relativePath));
+    File ymlFile = new File(GameUpdater.workDir, relativePath);
+    if (ymlFile.exists()) {
+      System.out.println("[Startup] Using cached file: " + ymlFile.getAbsolutePath());
+      return true;
+    }
+    System.out.println("[Startup] Downloading file: " + relativePath + " -> " + ymlFile.getAbsolutePath());
+    return downloadYmlFile(relativePath, null, ymlFile);
   }
 
   public static boolean downloadYmlFile(String ymlUrl, String fallbackUrl, File ymlFile) {
     if (Main.isOffline)
       return false;
+    if (ymlFile.exists()) {
+      return true;
+    }
     boolean isRelative = !ymlUrl.contains("http");
 
     GameUpdater.tempDir.mkdirs();

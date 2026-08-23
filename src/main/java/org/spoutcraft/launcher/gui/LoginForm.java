@@ -384,15 +384,38 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
 
   public void loadLauncherData() {
     if (!Boolean.getBoolean("launcher.skipSplash")) {
-      MirrorUtils.updateMirrorsYMLCache();
-      MD5Utils.updateMD5Cache();
-      ModPackListYML.updateModPacksYMLCache();
-      ModPackListYML.getAllModPackResources();
-      LibrariesYML.updateLibrariesYMLCache();
-      ModLibraryYML.updateModLibraryYML();
+      System.out.println("[Startup] Loading launcher metadata...");
+      boolean useBundledModpacks = ModPackListYML.hasBundledModpacksYml();
+      System.out.println("[Startup] Bundled modpacks.yml present: " + useBundledModpacks);
+      if (!useBundledModpacks) {
+        System.out.println("[Startup] Fetching mirrors.yml...");
+        MirrorUtils.updateMirrorsYMLCache();
+        System.out.println("[Startup] mirrors.yml complete");
+        System.out.println("[Startup] Updating MD5 cache...");
+        MD5Utils.updateMD5Cache();
+        System.out.println("[Startup] MD5 cache complete");
+        System.out.println("[Startup] Fetching modpacks.yml...");
+        ModPackListYML.updateModPacksYMLCache();
+        System.out.println("[Startup] modpacks.yml complete");
+        System.out.println("[Startup] Downloading modpack resources...");
+        ModPackListYML.getAllModPackResources();
+        System.out.println("[Startup] modpack resources complete");
+        System.out.println("[Startup] Loading libraries.yml...");
+        LibrariesYML.updateLibrariesYMLCache();
+        System.out.println("[Startup] libraries.yml complete");
+        System.out.println("[Startup] Loading modlibrary.yml...");
+        ModLibraryYML.updateModLibraryYML();
+        System.out.println("[Startup] modlibrary.yml complete");
+      } else {
+        System.out.println("[Startup] Using bundled modpacks.yml; skipping remote metadata refresh");
+        ModPackListYML.updateModPacksYMLCache();
+        System.out.println("[Startup] bundled modpacks.yml loaded");
+      }
     }
 
+    System.out.println("[Startup] Loading modpack logos...");
     ModPackListYML.loadModpackLogos();
+    System.out.println("[Startup] Modpack logos loaded");
 
     if (SettingsUtil.getModPackSelection() != null) {
       updateBranding();

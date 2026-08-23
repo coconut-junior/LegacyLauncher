@@ -32,7 +32,6 @@ import javax.swing.UIManager;
 
 import org.spoutcraft.launcher.gui.LoadingScreen;
 import org.spoutcraft.launcher.gui.LoginForm;
-import org.spoutcraft.launcher.logs.SystemConsoleListener;
 
 import com.beust.jcommander.JCommander;
 
