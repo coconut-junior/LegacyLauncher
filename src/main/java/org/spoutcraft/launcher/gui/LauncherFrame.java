@@ -28,6 +28,7 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
 import net.minecraft.Launcher;
+import net.technicpack.minecraftcore.mojang.auth.response.AuthResponse;
 
 import org.spoutcraft.launcher.LauncherController;
 import org.spoutcraft.launcher.MicrosoftAuth;
@@ -110,10 +111,33 @@ public class LauncherFrame extends JFrame implements WindowListener {
 
     String launcherPath = String.format("%s/%s", PlatformUtils.LAUNCHER_DIR, ModPackListYML.currentModPack);
 
-    minecraft.addParameter("username", user);
-    minecraft.addParameter("sessionid", session);
+    String username = user;
+    AuthResponse auth = MicrosoftAuth.getLastAuthResponse();
+    String accessToken = null;
+
+    if (auth != null) {
+        try {
+            java.lang.reflect.Field accessTokenField = AuthResponse.class.getDeclaredField("accessToken");
+            accessTokenField.setAccessible(true);
+            accessToken = (String) accessTokenField.get(auth);
+        } catch (Exception e) {
+            accessToken = session;
+        }
+    }
+
+    minecraft.addParameter("username", username);
+
+    // Use the actual access token for the session
+    // LegacyFix will intercept and handle it
+    String sessionToken = accessToken != null ? accessToken : "LegacyFix";
+    minecraft.addParameter("sessionid", sessionToken);
     minecraft.addParameter("downloadticket", downloadTicket);
     minecraft.addParameter("mppass", mcpass);
+
+    // minecraft.addParameter("username", user);
+    // minecraft.addParameter("sessionid", session);
+    // minecraft.addParameter("downloadticket", downloadTicket);
+    // minecraft.addParameter("mppass", mcpass);
     minecraft.addParameter("spoutcraftlauncher", "true");
     minecraft.addParameter("stand-alone", "true");
     minecraft.addParameter("portable", String.valueOf(MicrosoftAuth.getOptions().isPortable()));
