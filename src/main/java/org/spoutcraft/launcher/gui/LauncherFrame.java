@@ -125,11 +125,8 @@ public class LauncherFrame extends JFrame implements WindowListener {
         }
     }
 
-    minecraft.addParameter("username", username);
-
-    // Use the actual access token for the session
-    // LegacyFix will intercept and handle it
     String sessionToken = accessToken != null ? accessToken : "LegacyFix";
+    minecraft.addParameter("username", username);
     minecraft.addParameter("sessionid", sessionToken);
     minecraft.addParameter("downloadticket", downloadTicket);
     minecraft.addParameter("mppass", mcpass);
