@@ -44,6 +44,9 @@ import java.nio.charset.StandardCharsets;
 public class MicrosoftAuth {
 
   private static Options options = null;
+  
+  // ADD THIS: Store the last auth response for retrieval
+  private static AuthResponse lastAuthResponse = null;
 
   public static Options getOptions() {
     return options;
@@ -52,12 +55,30 @@ public class MicrosoftAuth {
   public static void setOptions(Options options) {
     MicrosoftAuth.options = options;
   }
+  
+  // ADD THIS: Method to get the last auth response
+  public static AuthResponse getLastAuthResponse() {
+    return lastAuthResponse;
+  }
+  
+  // ADD THIS: Clear the cached auth response
+  public static void clearAuthResponse() {
+    lastAuthResponse = null;
+  }
 
   public static AuthResponse doLogin(JProgressBar progress) throws IOException, MCNetworkException {
+    // Clear previous auth response
+    lastAuthResponse = null;
+    
     // Try cached Minecraft auth first
     AuthResponse cached = tryLoadCachedAuth();
     if (cached != null) {
+      System.out.println("Loading cached credentials...");
+      lastAuthResponse = cached; // Store for later retrieval
       return cached;
+    }
+    else {
+      System.out.println("No cached credentials found. Launching login form.");
     }
 
     final String clientId = "8dfabc1d-38a9-42d8-bc08-677dbc60fe65";
@@ -145,10 +166,7 @@ public class MicrosoftAuth {
     // Build AuthResponse
     AuthResponse authResponse = new AuthResponse();
 
-    // Use reflection to set private fields, or if fields are package-private, set directly
-    // But the best way is to use a constructor if available, or extend AuthResponse with setters
-
-    // Set accessToken and selectedProfile using reflection (if needed)
+    // Set accessToken and selectedProfile using reflection
     try {
         java.lang.reflect.Field accessTokenField = AuthResponse.class.getDeclaredField("accessToken");
         accessTokenField.setAccessible(true);
@@ -179,6 +197,15 @@ public class MicrosoftAuth {
     } catch (Exception ignored) {
     }
 
+    // ADD THIS: Store the auth response for later retrieval
+    lastAuthResponse = authResponse;
+    
+    // Debug logging
+    System.out.println("Auth successful!");
+    System.out.println("  Username: " + name);
+    System.out.println("  UUID: " + uuid);
+    System.out.println("  Access Token: " + (mcAccessToken != null ? mcAccessToken.substring(0, Math.min(10, mcAccessToken.length())) + "..." : "null"));
+    
     return authResponse;
 }
 
@@ -213,6 +240,7 @@ public class MicrosoftAuth {
   }
 
   private static AuthResponse tryLoadCachedAuth() {
+    System.out.println("trying to load cached");
     try {
       if (!Files.exists(AUTH_CACHE)) return null;
       String json = new String(Files.readAllBytes(AUTH_CACHE), StandardCharsets.UTF_8);
@@ -223,7 +251,7 @@ public class MicrosoftAuth {
       String uuid = obj.get("uuid").getAsString();
       String name = obj.get("name").getAsString();
       if (isMinecraftTokenExpired(expiresAt)) {
-        try { Files.delete(AUTH_CACHE); } catch (Exception ignored) {}
+        try {System.out.println("Microsoft token is expired. Deleting..."); Files.delete(AUTH_CACHE); } catch (Exception ignored) {}
         return null;
       }
       // Verify token still valid by fetching profile
@@ -248,9 +276,17 @@ public class MicrosoftAuth {
             e.printStackTrace();
             return null;
         }
+        
+        // Debug logging for cached auth
+        System.out.println("Cached auth loaded successfully!");
+        System.out.println("  Username: " + name);
+        System.out.println("  UUID: " + uuid);
+        System.out.println("  Token expires at: " + new Date(expiresAt));
+        
         return authResponse;
       } catch (Exception e) {
-        try { Files.delete(AUTH_CACHE); } catch (Exception ignored) {}
+        e.printStackTrace();
+        try { Files.delete(AUTH_CACHE); } catch (Exception e2) {}
         return null;
       }
     } catch (Exception e) {
