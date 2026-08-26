@@ -133,11 +133,6 @@ public class LauncherFrame extends JFrame implements WindowListener {
     minecraft.addParameter("sessionid", sessionToken);
     minecraft.addParameter("downloadticket", downloadTicket);
     minecraft.addParameter("mppass", mcpass);
-
-    // minecraft.addParameter("username", user);
-    // minecraft.addParameter("sessionid", session);
-    // minecraft.addParameter("downloadticket", downloadTicket);
-    // minecraft.addParameter("mppass", mcpass);
     minecraft.addParameter("spoutcraftlauncher", "true");
     minecraft.addParameter("stand-alone", "true");
     minecraft.addParameter("portable", String.valueOf(MicrosoftAuth.getOptions().isPortable()));
