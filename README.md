@@ -3,7 +3,7 @@
 If you miss the original Technic launcher, this is for you!
 It has been updated to support Microsoft 2-factor authentication and dependencies that have been broken over the past 10+ years have been fixed.
 
-Tested Configuration (Working as of July 2025):
+Tested Configuration (Working as of August 2026):
 - Windows 11 24H2
 - Java 8 Update 111 x64 https://www.oracle.com/java/technologies/javase/javase8-archive-downloads.html#license-lightbox
 
