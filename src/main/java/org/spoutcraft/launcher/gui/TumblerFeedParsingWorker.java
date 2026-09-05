@@ -15,7 +15,6 @@ import javax.swing.ToolTipManager;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 
-import org.spoutcraft.launcher.MirrorUtils;
 import org.spoutcraft.launcher.Util;
 
 public class TumblerFeedParsingWorker extends SwingWorker<Object, Object> implements PropertyChangeListener {
@@ -36,40 +35,40 @@ public class TumblerFeedParsingWorker extends SwingWorker<Object, Object> implem
   protected Object doInBackground() {
     URL url = null;
     try {
-      url = new URL("https://mirror.technicpack.net/Technic/");
+      url = TumblerFeedParsingWorker.class.getResource("/org/spoutcraft/launcher/tumblr/index.html");
+      if (url == null) {
+        editorPane.setText("Offline feed is unavailable.");
+        return null;
+      }
 
-      if (MirrorUtils.isAddressReachable(url.toString())) {
-        editorPane.setVisible(false);
-        editorPane.setContentType("text/html");
-        // editorPane.setEditable(false);
-        ToolTipManager.sharedInstance().registerComponent(editorPane);
+      editorPane.setVisible(false);
+      editorPane.setContentType("text/html");
+      // editorPane.setEditable(false);
+      ToolTipManager.sharedInstance().registerComponent(editorPane);
 
-        editorPane.addHyperlinkListener(new HyperlinkListener() {
-          @Override
-          public void hyperlinkUpdate(HyperlinkEvent e) {
-            if (HyperlinkEvent.EventType.ACTIVATED == e.getEventType()) {
-              try {
-                if (Desktop.isDesktopSupported()) {
-                  Desktop.getDesktop().browse(e.getURL().toURI());
-                }
-              } catch (IOException e1) {
-                e1.printStackTrace();
-              } catch (URISyntaxException e1) {
-                e1.printStackTrace();
+      editorPane.addHyperlinkListener(new HyperlinkListener() {
+        @Override
+        public void hyperlinkUpdate(HyperlinkEvent e) {
+          if (HyperlinkEvent.EventType.ACTIVATED == e.getEventType()) {
+            try {
+              if (Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().browse(e.getURL().toURI());
               }
+            } catch (IOException e1) {
+              e1.printStackTrace();
+            } catch (URISyntaxException e1) {
+              e1.printStackTrace();
             }
           }
-        });
+        }
+      });
 
-        editorPane.addPropertyChangeListener(this);
-        editorPane.setPage(url);
-      } else {
-        editorPane.setText("Oh Noes! Our Tumblr Feed is Down!");
-      }
+      editorPane.addPropertyChangeListener(this);
+      editorPane.setPage(url);
     } catch (MalformedURLException e1) {
       e1.printStackTrace();
     } catch (IOException e1) {
-      editorPane.setText("Oh Noes! Our Tumblr Server is Down!");
+      
       Util.log("Tumbler log @ '%' not avaliable.", url);
     }
 
