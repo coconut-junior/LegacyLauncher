@@ -30,7 +30,7 @@ public class MCNetworkException extends Exception {
   }
 
   public MCNetworkException(Throwable throwable, String message) {
-    this.cause = null;
+    this.cause = throwable;
     this.message = message;
   }
 

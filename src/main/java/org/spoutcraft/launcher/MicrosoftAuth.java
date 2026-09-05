@@ -40,6 +40,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.awt.Desktop;
 
 public class MicrosoftAuth {
 
@@ -101,17 +102,22 @@ public class MicrosoftAuth {
         .builder(redirectUri)
         .scopes(Collections.singleton(scope))
         .prompt(Prompt.SELECT_ACCOUNT)
+        .httpPollingTimeoutInSeconds(300)
+        .systemBrowserOptions(SystemBrowserOptions.builder()
+            .openBrowserAction(url -> openBrowser(url))
+            .build())
         .build();
 
     IAuthenticationResult result;
     try {
-        result = pca.acquireToken(parameters).get(90, TimeUnit.SECONDS);
+        result = pca.acquireToken(parameters).get(300, TimeUnit.SECONDS);
       } catch (TimeoutException e) {
         System.out.println("Microsoft authentication timed out; forcing a fresh sign-in attempt");
         throw new MCNetworkException("Microsoft sign-in timed out. Please try again.");
       } catch (Exception e) {
-      System.out.println("auth failed");
-        throw new MCNetworkException("Microsoft authentication failed: " + e.getMessage());
+        System.out.println("auth failed: " + e.getClass().getName() + ": " + e.getMessage());
+        e.printStackTrace();
+        throw new MCNetworkException(e, "Microsoft authentication failed: " + e.getMessage());
     }
 
     if (result == null || result.accessToken() == null || isTokenExpired(result.expiresOnDate())) {
@@ -293,6 +299,18 @@ public class MicrosoftAuth {
       return null;
     }
   }
+
+private static void openBrowser(URL url) {
+  try {
+    if (System.getProperty("os.name", "").toLowerCase().contains("win")) {
+      new ProcessBuilder("rundll32.exe", "url.dll,FileProtocolHandler", url.toExternalForm()).start();
+    } else {
+      Desktop.getDesktop().browse(url.toURI());
+    }
+  } catch (Exception e) {
+    throw new IllegalStateException("Unable to open the Microsoft sign-in page: " + e.getMessage(), e);
+  }
+}
 
 // Helper: POST JSON and parse response
 private static JsonObject postJson(String url, String json) throws IOException, MCNetworkException {

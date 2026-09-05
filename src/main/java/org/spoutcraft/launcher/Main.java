@@ -109,6 +109,9 @@ public class Main {
   }
 
   public static void main(String[] args) throws Exception {
+    System.setProperty("java.net.preferIPv4Stack", "true");
+    System.setProperty("java.net.preferIPv6Stack", "false");
+
     // Check Java version - exit if Java 17 or later
     String javaVersion = System.getProperty("java.version");
     int majorVersion = Integer.parseInt(javaVersion.split("\\.")[0]);
@@ -193,9 +196,6 @@ public class Main {
     }
     PlatformUtils.getWorkingDirectory().mkdirs();
     new File(PlatformUtils.getWorkingDirectory(), "launcher").mkdir();
-
-    System.setProperty("java.net.preferIPv4Stack", "true");
-    System.setProperty("java.net.preferIPv6Stack", "false");
 
     Util.log("------------------------------------------");
     Util.log("Launcher is starting....");
