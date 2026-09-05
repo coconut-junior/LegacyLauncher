@@ -119,6 +119,25 @@ public class MirrorUtils {
     return false;
   }
 
+  public static boolean isNetworkAvailable(String url) {
+    HttpURLConnection connection = null;
+    try {
+      connection = (HttpURLConnection) new URL(url).openConnection();
+      connection.setConnectTimeout(3000);
+      connection.setReadTimeout(3000);
+      connection.setInstanceFollowRedirects(true);
+      connection.setRequestMethod("GET");
+      int responseCode = connection.getResponseCode();
+      return responseCode >= 200 && responseCode < 500;
+    } catch (Exception e) {
+      return false;
+    } finally {
+      if (connection != null) {
+        connection.disconnect();
+      }
+    }
+  }
+
   public static Configuration getMirrorsYML() {
     updateMirrorsYMLCache();
     Configuration config = new Configuration(mirrorsYML);

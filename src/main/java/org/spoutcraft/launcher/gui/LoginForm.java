@@ -128,6 +128,8 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
   Container                                loginPane        = new Container();
   Container                                offlinePane      = new Container();
   private final JComboBox                  modpackList;
+  private boolean                           controlsInitialized;
+  private boolean                           brandingLoaded;
 
   public LoginForm() {
     loadLauncherData();
@@ -379,8 +381,19 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
       loginPane.setVisible(false);
     }
 
-    usernameField.setEnabled(false);
-    passwordField.setEnabled(false);
+    usernameField.setEnabled(!Main.isOffline);
+    passwordField.setEnabled(!Main.isOffline);
+    controlsInitialized = true;
+    enableLoginControls();
+  }
+
+  private void enableLoginControls() {
+    if (controlsInitialized && brandingLoaded && !Main.isOffline) {
+      loginButton.setEnabled(true);
+      optionsButton.setEnabled(true);
+      usernameField.setEnabled(true);
+      passwordField.setEnabled(true);
+    }
   }
 
   public void loadLauncherData() {
@@ -425,7 +438,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     }
 
     if (!Main.isOffline && GameUpdater.canPlayOffline()
-        && !MirrorUtils.isAddressReachable("https://login.microsoftonline.com/consumers/")) {
+        && !MirrorUtils.isNetworkAvailable("https://login.microsoftonline.com/consumers/")) {
       Main.isOffline = true;
     }
   }
@@ -444,14 +457,14 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
 
       @Override
       protected void done() {
+        brandingLoaded = true;
         if (options == null) {
           options = new OptionDialog();
           options.modPackList = ModPackListYML.modpackMap;
           options.setVisible(false);
         }
 
-        loginButton.setEnabled(true);
-        optionsButton.setEnabled(true);
+        enableLoginControls();
         setIconImage(Toolkit.getDefaultToolkit().getImage(ModPackYML.getModPackIcon()));
         setTitle(String.format("Technic Launcher - %s - (%s)", Main.build, ModPackListYML.currentModPackLabel));
         options.reloadSettings();

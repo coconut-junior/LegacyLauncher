@@ -175,8 +175,11 @@ public class LauncherFrame extends JFrame implements WindowListener {
   @Override
   public void windowClosing(WindowEvent e) {
     if (LauncherFrame.this.minecraft != null) {
-      LauncherFrame.this.minecraft.stop();
-      LauncherFrame.this.minecraft.destroy();
+      try {
+        LauncherFrame.this.minecraft.stop();
+      } catch (Throwable t) {
+        t.printStackTrace();
+      }
     }
     try {
       Thread.sleep(10000L);
