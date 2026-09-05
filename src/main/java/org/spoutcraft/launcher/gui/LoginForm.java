@@ -212,7 +212,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
       }
     });
 
-    JLabel lblMinecraftUsername = new JLabel("Microsoft Email: ");
+    JLabel lblMinecraftUsername = new JLabel("Minecraft Username: ");
     lblMinecraftUsername.setFont(new Font("Arial", Font.PLAIN, 11));
     lblMinecraftUsername.setHorizontalAlignment(SwingConstants.RIGHT);
     lblMinecraftUsername.setBounds(-17, 17, 150, 14);
@@ -381,9 +381,9 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
       loginPane.setVisible(false);
     }
 
-    usernameField.setEnabled(!Main.isOffline);
-    passwordField.setEnabled(!Main.isOffline);
     controlsInitialized = true;
+    usernameField.setEnabled(false);
+    passwordField.setEnabled(false);
     enableLoginControls();
   }
 
@@ -391,8 +391,6 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     if (controlsInitialized && brandingLoaded && !Main.isOffline) {
       loginButton.setEnabled(true);
       optionsButton.setEnabled(true);
-      usernameField.setEnabled(true);
-      passwordField.setEnabled(true);
     }
   }
 
@@ -970,7 +968,6 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
 
     ImageIcon backgroundImage = new ImageIcon(LoginForm.class.getResource("/org/spoutcraft/launcher/backgrounds/launcher_background.jpg"));
     contentPane.setBackgroundImage(backgroundImage);
-    contentPane.setBackgroundOpacity(0.2f);
   }
 
   @Override

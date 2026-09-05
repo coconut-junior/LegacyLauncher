@@ -12,7 +12,7 @@ class BackgroundPanel extends JPanel {
   private static final long serialVersionUID    = 1L;
   private ImageIcon         backgroundImageIcon = null;
   private Image             backgroundImage     = null;
-  private float             backgroundOpacity   = 0.5f;
+  private float             backgroundOpacity   = 0.2f;
 
   public BackgroundPanel() {
     setOpaque(true);
