@@ -207,7 +207,7 @@ public class Util {
         "/org/spoutcraft/launcher/" + modpackName + "/" + filename,
         "/org/spoutcraft/launcher/modpacks/" + modpackName + "/resources/" + filename,
         "/modpacks/" + modpackName + "/resources/" + filename,
-        "/org/spoutcraft/launcher/resources/" + modpackName + "/" + filename
+        "/org/spoutcraft/launcher/resources/" + modpackName + "/" + filename,
     };
 
     for (String candidate : candidates) {

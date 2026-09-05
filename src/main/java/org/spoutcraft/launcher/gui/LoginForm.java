@@ -212,7 +212,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
       }
     });
 
-    JLabel lblMinecraftUsername = new JLabel("Minecraft Email: ");
+    JLabel lblMinecraftUsername = new JLabel("Microsoft Email: ");
     lblMinecraftUsername.setFont(new Font("Arial", Font.PLAIN, 11));
     lblMinecraftUsername.setHorizontalAlignment(SwingConstants.RIGHT);
     lblMinecraftUsername.setBounds(-17, 17, 150, 14);
@@ -921,9 +921,6 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     tumblerFeed = new TumblerFeedParsingWorker(editorPane);
     tumblerFeed.execute();
 
-    File cacheDir = new File(PlatformUtils.getWorkingDirectory(), "cache");
-    cacheDir.mkdir();
-    File backgroundImage = new File(cacheDir, "launcher_background.png");
     // If a modpack is selected, look in multiple candidate screenshot locations and pick one at random
     try {
       String pack = ModPackListYML.currentModPack;
@@ -971,7 +968,8 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
       ex.printStackTrace();
     }
 
-    (new BackgroundImageWorker(backgroundImage, contentPane)).execute();
+    ImageIcon backgroundImage = new ImageIcon(LoginForm.class.getResource("/org/spoutcraft/launcher/backgrounds/launcher_background.jpg"));
+    contentPane.setBackgroundImage(backgroundImage);
   }
 
   @Override
