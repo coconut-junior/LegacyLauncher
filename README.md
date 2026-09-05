@@ -10,7 +10,7 @@ Tested Configuration (Working as of August 2026):
 What is NOT working:
 - Macs with an Apple Silicon CPU (M1, M2, etc...) will not launch the game due to the required lwjgl library being x86-64. Maybe there is an ARM64 version of this, but I have not been able to find one
 
-![screenshot1](https://i.imgur.com/CR0Lu0U.png)
+![screenshot1](/assets/Capture.PNG)
 
 ## Building
 - Run:
