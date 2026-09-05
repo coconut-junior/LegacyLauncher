@@ -301,12 +301,42 @@ public class MicrosoftAuth {
   }
 
 private static void openBrowser(URL url) {
+  String osName = System.getProperty("os.name", "").toLowerCase();
   try {
-    if (System.getProperty("os.name", "").toLowerCase().contains("win")) {
+    if (osName.contains("win")) {
       new ProcessBuilder("rundll32.exe", "url.dll,FileProtocolHandler", url.toExternalForm()).start();
-    } else {
-      Desktop.getDesktop().browse(url.toURI());
+      return;
     }
+
+    Exception desktopException = null;
+    if (Desktop.isDesktopSupported()) {
+      try {
+        Desktop desktop = Desktop.getDesktop();
+        if (desktop.isSupported(Desktop.Action.BROWSE)) {
+          desktop.browse(url.toURI());
+          return;
+        }
+      } catch (Exception e) {
+        desktopException = e;
+      }
+    }
+
+    if (osName.contains("linux")) {
+      try {
+        new ProcessBuilder("xdg-open", url.toExternalForm()).start();
+        return;
+      } catch (Exception e) {
+        if (desktopException != null) {
+          e.addSuppressed(desktopException);
+        }
+        throw e;
+      }
+    }
+
+    if (desktopException != null) {
+      throw desktopException;
+    }
+    throw new UnsupportedOperationException("Browser launching is not supported");
   } catch (Exception e) {
     throw new IllegalStateException("Unable to open the Microsoft sign-in page: " + e.getMessage(), e);
   }

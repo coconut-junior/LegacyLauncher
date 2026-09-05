@@ -694,12 +694,11 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
           values = MicrosoftAuth.doLogin(progressBar);
           StringSelection stringSelection = new StringSelection(values.toString());
           clipboard.setContents(stringSelection, null);
-
-
           return true;
         } catch (Exception e) {
           this.cancel(true);
           progressBar.setString(e.getMessage());
+          System.out.println(e.getMessage());
 
           //copy error
           String myString = e.getMessage();

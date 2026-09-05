@@ -16,7 +16,7 @@
 
 	<name>Technic Launcher</name>
 	<description>A launcher for the Minecraft Modpacks</description>
-	<url>https://github.com/Su5eD/LegacyLauncher</url>
+	<url>https://github.com/coconut-junior/LegacyLauncher</url>
 
 	<!-- License -->
 	<licenses>
@@ -29,9 +29,9 @@
 
 	<!-- Source code -->
 	<scm>
-		<developerConnection>scm:git:git@github.com:Su5eD/LegacyLauncher.git</developerConnection>
-		<connection>scm:git:git://github.com/Su5eD/LegacyLauncher.git</connection>
-		<url>https://github.com/Su5eD/LegacyLauncher</url>
+		<developerConnection>scm:git:git@github.com:coconut-junior/LegacyLauncher.git</developerConnection>
+		<connection>scm:git:git://github.com/coconut-junior/LegacyLauncher.git</connection>
+		<url>https://github.com/coconut-junior/LegacyLauncher</url>
 	</scm>
 
 	<!-- Dependencies -->
@@ -217,7 +217,7 @@
 								<fileVersion>0.5.0.0</fileVersion>
 								<txtFileVersion>0.5.0.0</txtFileVersion>
 								<fileDescription>${project.name}</fileDescription>
-								<copyright>SpoutDev</copyright>
+								<copyright>Jimmy Blanck</copyright>
 								<productVersion>0.5.0.0</productVersion>
 								<txtProductVersion>0.5.0.0</txtProductVersion>
 								<productName>${project.name}</productName>
