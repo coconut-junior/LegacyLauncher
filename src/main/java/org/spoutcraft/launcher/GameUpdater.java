@@ -539,10 +539,6 @@ public class GameUpdater implements DownloadListener {
       if (!path.exists()) {
         return false;
       }
-      if (!new File(path, "lastlogin").exists()) {
-        return false;
-      }
-
       path = new File(path, SettingsUtil.getModPackSelection() + File.separator + "bin");
       if (!path.exists()) {
         return false;
@@ -571,10 +567,6 @@ public class GameUpdater implements DownloadListener {
       if (!path.exists()) {
         return false;
       }
-      if (!new File(path, "lastlogin").exists()) {
-        return false;
-      }
-
       path = new File(path, modPackName + File.separator + "bin");
       if (!path.exists()) {
         return false;

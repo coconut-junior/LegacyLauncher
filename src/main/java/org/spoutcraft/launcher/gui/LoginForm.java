@@ -63,6 +63,7 @@ import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.ImageIcon;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
 import javax.swing.WindowConstants;
@@ -422,6 +423,11 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     } else {
       setTitle("Technic Launcher - No Modpack Selected");
     }
+
+    if (!Main.isOffline && GameUpdater.canPlayOffline()
+        && !MirrorUtils.isAddressReachable("https://login.microsoftonline.com/consumers/")) {
+      Main.isOffline = true;
+    }
   }
 
   public void updateBranding() {
@@ -640,6 +646,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
     }
 
     if (source == offlineMode) {
+      Main.isOffline = true;
       gameUpdater.user = "user";
       gameUpdater.downloadTicket = "0";
       offlineMode.setEnabled(false);
@@ -699,6 +706,14 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
           this.cancel(true);
           progressBar.setString(e.getMessage());
           System.out.println(e.getMessage());
+
+          if (GameUpdater.canPlayOffline()) {
+            Main.isOffline = true;
+            SwingUtilities.invokeLater(() -> {
+              loginPane.setVisible(false);
+              offlinePane.setVisible(true);
+            });
+          }
 
           //copy error
           String myString = e.getMessage();
