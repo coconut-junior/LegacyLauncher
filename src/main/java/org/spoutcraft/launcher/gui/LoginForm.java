@@ -970,6 +970,7 @@ public class LoginForm extends JFrame implements ActionListener, DownloadListene
 
     ImageIcon backgroundImage = new ImageIcon(LoginForm.class.getResource("/org/spoutcraft/launcher/backgrounds/launcher_background.jpg"));
     contentPane.setBackgroundImage(backgroundImage);
+    contentPane.setBackgroundOpacity(0.2f);
   }
 
   @Override
